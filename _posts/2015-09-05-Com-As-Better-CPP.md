@@ -1,6 +1,6 @@
 ---
 layout: post
-category: thought of books
+category: Learn
 tags: [program]
 ---
 {% include JB/setup %}
