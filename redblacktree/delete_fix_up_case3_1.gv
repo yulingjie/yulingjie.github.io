@@ -1,0 +1,41 @@
+graph{
+    subgraph cluster_l
+    {
+        l_b[shape=circle,label="B/c",fixedsize=true]
+
+        l_d[shape=circle,label="D/w",fixedsize=true,fontcolor=white,color=black,style=filled]
+        l_a[shape=circle,label="A/x",fixedsize=true,fontcolor=white,color=grey,style=filled]
+        l_b -- l_a
+        l_b -- l_d
+        l_c[shape=circle,label="C",fixedsize=true,fontcolor=white,color=black,style=filled]
+        l_e[shape=circle,label="E",fixedsize=true,fontcolor=white,color=red,style=filled]
+        l_d--l_c
+        l_d--l_e
+    }
+    subgraph cluster_r
+    {
+        r_b[shape=circle,label="B/c",fixedsize=true]
+        r_c[shape=circle,label="C",fixedsize=true,fontcolor=white,color=black,style=filled]
+
+        r_e[shape=circle,label="E/w",fontcolor=white,color=black,style=filled,fixedsize=true]
+
+        r_a[shape=circle,label="A/x",fixedsize=true,fontcolor=white,color=grey,style=filled]
+
+
+        r_d[shape=circle,label="D",color=red,style=filled,fixedsize=true]
+
+
+        r_el[shape=circle,style=invis]
+        r_er[shape=circle,style=invis]
+
+        r_e --r_er
+
+        r_d --r_el
+        r_b -- r_a
+        r_b -- r_e
+
+        r_d--r_c
+        r_e -- r_d
+    }
+    label="case 3'"
+}

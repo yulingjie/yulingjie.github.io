@@ -1,0 +1,46 @@
+graph g 
+{
+
+    graph[compound=true]
+    subgraph cluster_l 
+    {
+        c1_b [shape=circle,style=filled,color=black,fontcolor=white, label="B"]
+
+       c1_d [shape=circle,style=filled,style=filled,color=red,label="D/w", fixedsize=true]
+        c1_a [shape=circle,style=filled,color=grey,fontcolor=white,fixedsize=true,label="A/x"]
+        c1_b -- c1_a;
+
+        c1_b -- c1_d;
+
+        c1_c [shape=circle,style=filled,color=black,fontcolor=white,label="C"]
+
+        c1_e [shape=circle,style=filled,color=black,fontcolor=white,label="E"]
+
+
+        c1_d -- c1_c;
+        c1_d -- c1_e;
+   }
+
+//    space_1 [style=invis]
+
+
+     
+    
+
+    subgraph cluster_t{
+        t_d [shape=circle, style=filled,color=black,fontcolor=white,label="D"]
+        t_e [shape=circle,style=filled,color=black,label="E/w",fixedsize=true,fontcolor=white]
+
+        t_c [shape=circle,style=filled,color=black fontcolor=white,label="C",fixedsize=true]
+        t_b [shape=circle,style=filled,color=red,label="B"]
+        t_d -- t_b;
+        t_d -- t_c;
+
+        t_a [shape=circle,style=filled,color=grey,fontcolor=white,label="A/x",fixedsize=true]
+        t_b -- t_a
+        t_b -- t_e
+
+    }
+    label="case 1'"
+
+}

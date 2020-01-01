@@ -1,0 +1,18 @@
+graph G{
+    
+    {
+    x [shape=circle,style=filled,color=grey];
+    y [shape=circle];
+    z [shape=circle];
+    yl[shape=circle,style=invis];
+    yr[shape=circle,style=invis];
+    zl[shape=circle,style=invis];
+    zr[shape=circle,style=invis];
+    x -- y;
+    z -- x;
+    y -- yl;
+    y -- yr;
+    x -- zl;
+    z -- zr;
+    }
+}
