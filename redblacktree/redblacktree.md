@@ -1,4 +1,4 @@
-# 红黑树
+﻿# 红黑树
 本篇文章的目的，学习红黑树。使用教材，"Introduction to Algorithms 3rd"。
 
 ##综述
