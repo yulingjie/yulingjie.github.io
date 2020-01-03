@@ -1,5 +1,6 @@
 ﻿---
-layout: default
+layout: post
+title : 红黑树
 ---
 
 # 红黑树
@@ -30,11 +31,11 @@ layout: default
 
 左旋x节点，z的左子节点接到x的右侧，x接到z的左侧。
 
-![operation 1](left_rotate_left.png)   ![operation 2](left_rotate_right.png)
+![operation 1](/assets/redblacktree/left_rotate_left.png)   ![operation 2](/assets/redblacktree/left_rotate_right.png)
 
 右旋x节点，y的右子节点接到x的左侧，x接到y的右侧。
 
-![operation 1](left_rotate_left.png) ![operation 3](right_rotate_right.png)
+![operation 1](/assets/redblacktree/left_rotate_left.png) ![operation 3](/assets/redblacktree/right_rotate_right.png)
 
 
 ```
@@ -121,8 +122,8 @@ Maintenance:
    对于情形2，我们对z.p左旋，从而将情形2化为情形3。此时z是左孩子，z与z.p均为红色，z的叔叔节点y时黑色，z.p.p不变。
    我们将z.p染成黑色，z.p.p染成红色，然后右旋z.p.p。此时z.p变成黑色，属性2与4均满足，我们将z.p.p染成红色后，黑高减一，但现在我们将z.p染成黑色，黑高加一，于是属性5满足。
 ```
-![operation 2](insert_case1_left.png)
-![operation 3](insert_case2.png)
+![operation 2](/assets/redblacktree/insert_case1_left.png)
+![operation 3](/assets/redblacktree/insert_case2.png)
 具体算法如下：
 ```
 RB-INSERT-FIXUP(T,z)
@@ -222,13 +223,13 @@ T.nil，我们将x移动到y原来的位置。这里需要注意的是，如果z
     * 情形4，x的兄弟节点w是黑节点。w的右子节点是红色。我们将w与w.p的颜色互换。将w的右节点颜色置为黑色，并左旋x.p。这样，我们可以将x的BLACK-BLACK变成BLACK即可。
 对于属性4和属性2不满足，我们简单的将x置黑即可。
 
-![operation 4](delete_fix_up.png)   ![operation 4'](delete_fix_up_case_1_1.png)
+![operation 4](/assets/redblacktree/delete_fix_up.png)   ![operation 4'](/assets/redblacktree/delete_fix_up_case_1_1.png)
 
-![operation 5](delete_fix_up_case2.png)   ![operation 5'](delete_fix_up_case2_1.png)
+![operation 5](/assets/redblacktree/delete_fix_up_case2.png)   ![operation 5'](/assets/redblacktree/delete_fix_up_case2_1.png)
 
-![operation 6](delete_fix_up_case3.png) ![operation 6'](delete_fix_up_case3_1.png)
+![operation 6](/assets/redblacktree/delete_fix_up_case3.png) ![operation 6'](/assets/redblacktree/delete_fix_up_case3_1.png)
 
-![operation 7](delete_fix_up_case4.png) ![operation 7'](delete_fix_up_case4_1.png)
+![operation 7](/assets/redblacktree/delete_fix_up_case4.png) ![operation 7'](/assets/redblacktree/delete_fix_up_case4_1.png)
 ```
 RB-DELETE-FIXUP(T,x)
     while x != T.root and x.color == BLACK
