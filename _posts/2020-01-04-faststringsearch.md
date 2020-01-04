@@ -1,3 +1,8 @@
+---
+layout: post
+title : BM算法
+---
+
 # BM算法（字符串快速匹配算法）
 ## 综述
 本文目的在于读论文["A Fast String Searching Algorithm"](https://www.cs.utexas.edu/users/moore/publications/fstrpos.pdf)
