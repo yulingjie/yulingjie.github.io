@@ -277,7 +277,7 @@ RB-DELETE-FIXUP(T,x)
         x.color = BLACK                     // set root to BLACK
 ```
 分析
-只有情形2会造成whilte循环重入，且对于有n个内部节点的树来说，树高最多为O(lgn)，于是删除时间最多为O(lgn)。
+只有情形2会造成whilte循环重入,并且整个删除周期最多只会做三次旋转，对于有n个内部节点的树来说，树高最多为O(lgn)，于是删除时间最多为O(lgn)。
 
 ## 代码
 ```
