@@ -1,10 +1,12 @@
 ---
 layout: post
 title : interval trees
+excerpt_separator: <!--more-->
 ---
 
 ## 本文目的： 研究interval trees来加深对红黑树的理解。
 
+<!--more-->
 ### Augment Tree
 通过对已有的数据结构附加额外的属性，达到实现额外功能的目的。
 附加的额外属性要保证原数据结构的增删改查的时间复杂度不会有渐进意义上的增加。

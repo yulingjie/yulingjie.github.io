@@ -1,13 +1,14 @@
 ---
 layout: post
-title : BM算法
+title : BM算法（字符串快速匹配算法）
+excerpt_seperator: <!--more-->
 ---
 
-# BM算法（字符串快速匹配算法）
 ## 综述
 本文目的在于读论文["A Fast String Searching Algorithm"](https://www.cs.utexas.edu/users/moore/publications/fstrpos.pdf)
 
 <!--more-->
+
 字符串string
 匹配串P，长度patlen。
 对字符串T和匹配串P进行匹配，如果自右向左进行匹配，而不是自左向右，有如下观察：

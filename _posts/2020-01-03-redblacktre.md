@@ -1,10 +1,14 @@
 ﻿---
 layout: post
 title : 红黑树
+exceprt_seperator: <!--more-->
+
 ---
 
 # 红黑树
 本篇文章的目的，学习红黑树。使用教材，"Introduction to Algorithms 3rd"。
+
+<!--more-->
 
 ##综述
 首先，红黑树的五种属性：
