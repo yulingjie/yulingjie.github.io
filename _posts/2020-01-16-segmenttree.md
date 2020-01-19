@@ -1,6 +1,6 @@
 ---
 layout: post
-title : 红黑树
+title : segment tree
 exceprt_seperator: <!--more-->
 
 ---
