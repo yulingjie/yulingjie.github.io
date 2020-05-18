@@ -197,6 +197,21 @@ section {
 	
 }
 
+.entry-content{
+    margin: 10px 0;
+}
+
 figcaption {
     font-size: smaller;
+}
+
+.entry-header {
+    margin: 1px 0 10px 0;
+    border: 0;
+    color: #000000;
+    font-family: Arial, sans-serif;
+    font-size: medium;
+    line-height: normal;
+    text-align: left;
+    font-weight: bold;
 }

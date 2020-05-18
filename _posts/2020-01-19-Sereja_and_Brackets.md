@@ -1,10 +1,11 @@
 ---
 layout: post
 title : C.Sereja and Brackets
+categories: [算法]
 exceprt_seperator: <!--more-->
 
 ---
-## 本文章目的
+
 趁热打铁，深入理解segment tree算法。参考文章[链接](https://codeforces.com/blog/entry/15890)。
 
 ## 问题描述

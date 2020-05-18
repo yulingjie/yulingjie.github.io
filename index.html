@@ -5,8 +5,16 @@ layout: default
 <section class="posts">
 <ul>
 {% for post in site.posts %}
-<li><a href="{{ site.baseurl }}{{ post.url }}">{{ post.title }}</a><time datetime="{{ post.date | date_to_xmlschema }}">{{ post.date | date: "%m-%d-%Y" }}</time></li>
+<div class="entry-inner">
+<li><h3 href="{{ site.baseurl }}{{ post.url }}" class="entry-header">{{ post.title }}</h3><time datetime="{{ post.date | date_to_xmlschema }}">{{ post.date | date: "%m-%d-%Y" }}</time>
+</li>
+<div class="entry-content">	{{ post.excerpt }} </div>
+</div>
+
+
+
 {% endfor %}
+
 </ul>
 </section>
 

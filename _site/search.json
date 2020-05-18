@@ -4,7 +4,7 @@
 
       "title"    : "C.Sereja and Brackets",
       "url"      : "/2020/01/19/sereja-and-brackets",
-      "category" : "",
+      "category" : "算法",
       "tags"     : "",
       "date"     : "2020-01-19 00:00:00 +0800",
       "discription" : ""
@@ -15,7 +15,7 @@
 
       "title"    : "segment tree",
       "url"      : "/2020/01/16/segmenttree",
-      "category" : "",
+      "category" : "算法",
       "tags"     : "",
       "date"     : "2020-01-16 00:00:00 +0800",
       "discription" : ""
@@ -37,7 +37,7 @@
 
       "title"    : "interval trees",
       "url"      : "/2020/01/05/intervaltree",
-      "category" : "",
+      "category" : "算法",
       "tags"     : "",
       "date"     : "2020-01-05 00:00:00 +0800",
       "discription" : ""
@@ -48,7 +48,7 @@
 
       "title"    : "BM算法（字符串快速匹配算法）",
       "url"      : "/2020/01/04/faststringsearch",
-      "category" : "",
+      "category" : "算法",
       "tags"     : "",
       "date"     : "2020-01-04 00:00:00 +0800",
       "discription" : ""

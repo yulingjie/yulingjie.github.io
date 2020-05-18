@@ -1,10 +1,11 @@
 ---
 layout: post
 title : segment tree
+categories: [算法]
 exceprt_seperator: <!--more-->
 
 ---
-# segment tree
+
 本文的目的，归纳整理segment tree这个数据结构的使用。参考codeforces的[链接
 1](https://codeforces.com/blog/entry/15729)和[链接2](https://codeforces.com/blog/entry/18051)以及[链接3](https://codeforces.com/blog/entry/15890)。
 

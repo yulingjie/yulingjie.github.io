@@ -1,10 +1,11 @@
 ---
 layout: post
 title : interval trees
+categories: [算法]
 excerpt_separator: <!--more-->
 ---
 
-## 本文目的： 研究interval trees来加深对红黑树的理解。
+本文目的： 研究interval trees来加深对红黑树的理解。
 
 <!--more-->
 ### Augment Tree
