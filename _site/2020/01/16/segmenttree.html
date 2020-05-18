@@ -1,0 +1,231 @@
+<!DOCTYPE html><html lang="en" ><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="Jekyll v4.0.1" /><meta property="og:title" content="segment tree" /><meta property="og:locale" content="en_US" /><meta name="description" content="segment tree 本文的目的，归纳整理segment tree这个数据结构的使用。参考codeforces的链接 1和链接2以及链接3。" /><meta property="og:description" content="segment tree 本文的目的，归纳整理segment tree这个数据结构的使用。参考codeforces的链接 1和链接2以及链接3。" /><link rel="canonical" href="http://localhost:4001/2020/01/16/segmenttree" /><meta property="og:url" content="http://localhost:4001/2020/01/16/segmenttree" /><meta property="og:site_name" content="只砖片瓦" /><meta property="og:type" content="article" /><meta property="article:published_time" content="2020-01-16T00:00:00+08:00" /><meta name="twitter:card" content="summary" /><meta property="twitter:title" content="segment tree" /><meta name="twitter:site" content="@" /> <script type="application/ld+json"> {"headline":"segment tree","dateModified":"2020-01-16T00:00:00+08:00","datePublished":"2020-01-16T00:00:00+08:00","mainEntityOfPage":{"@type":"WebPage","@id":"http://localhost:4001/2020/01/16/segmenttree"},"description":"segment tree 本文的目的，归纳整理segment tree这个数据结构的使用。参考codeforces的链接 1和链接2以及链接3。","url":"http://localhost:4001/2020/01/16/segmenttree","@type":"BlogPosting","@context":"https://schema.org"}</script><title> segment tree - 只砖片瓦</title><link rel="shortcut icon" href="/favicon.png"><link rel="alternate" type="application/atom+xml" title="只砖片瓦" href="/atom.xml"><link rel="alternate" type="application/json" title="只砖片瓦" href="http://localhost:4001/feed.json" /><link rel="sitemap" type="application/xml" title="sitemap" href="/sitemap.xml" /><style> *,:after,:before{box-sizing:border-box;background-color:inherit;color:inherit;margin:0;padding:0}body{font-family:system-ui, sans-serif;-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;line-height:1.5;font-size:1rem;color:#16171a}nav ul{border-right:1px solid #edf2f7}a{color:#000;text-decoration-skip-ink:auto;text-decoration:underline}pre{margin:.5rem 0;padding:.5rem}.post p{margin:.5rem 0}.post h1,.post h2,.post h3,.post h4{margin:1rem 0}.post h2:first-child,.project h2:first-child,.photo h2:first-child{margin-top:0}.meta{margin:2rem 0}code,pre{background:#ecedee}code{padding:.1rem}pre code{border:none}pre{padding:1rem;overflow-x:auto}img{max-width:100%}hr{background:#000;height:1px;border:0}header{flex-basis:10rem;flex-grow:1;position:relative}header a{text-decoration:none}header li{margin-bottom:.2rem;text-align:right;margin-right:2rem}header a.active{font-weight:bold}header,section{padding:1rem}blockquote{font-style:italic;border-left:5px solid #ececec;padding-left:1rem}h1,h2,h3,h4,h5{line-height:1;margin:1rem 0;font-weight:600}section h1:first-child{margin-top:0}strong,b{font-weight:bold}.photos ul{list-style:none}.photos li{margin-bottom:1.5rem}.photo picture,.project picture{margin-bottom:0.5rem}.posts ul,header ul{list-style:none}.posts li{align-items:center;display:flex;justify-content:space-between;margin-bottom:.5rem}.posts li a,.posts li div,.projects li a{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-decoration:none}.posts li time,.projects li time{padding-left:1rem;white-space:nowrap;font-variant-numeric:tabular-nums}main{display:flex;flex-wrap:wrap;max-width:60rem;margin:2rem auto;padding:1rem}@media screen and (max-width: 45rem){header li{display:inline;margin-right:1rem}.logo{padding-bottom:1rem}header ul{border-bottom:1px solid #edf2f7;padding-bottom:2rem}nav ul{border-right:0px}.photos ul{margin-top:0.5rem}}section{flex-basis:0;flex-grow:999;min-width:70%;display:flex;flex-direction:column}figcaption{font-size:smaller}</style></head><body><main role="main"><header role="banner"> <!--<h1 class="logo">只砖片瓦</h1>--><nav role="navigation"><ul><li><a href="/" >Writing</a></li><li><a href="/about" >About</a></li><li><a href="/search" >Search</a></li><li><a href="/atom.xml" >Rss</a></li></ul></nav></header><section class="post"><h2>segment tree</h2><h1 id="segment-tree">segment tree</h1><p>本文的目的，归纳整理segment tree这个数据结构的使用。参考codeforces的<a href="https://codeforces.com/blog/entry/15729">链接 1</a>和<a href="https://codeforces.com/blog/entry/18051">链接2</a>以及<a href="https://codeforces.com/blog/entry/15890">链接3</a>。</p><!--more--><h2 id="基本结构">基本结构</h2><p>先考虑2的k次幂,这个比较好理解。 考虑数组[0,16)： <a href="/assets/segmenttree/basic.png">!operation 1</a> 这里使用完全二叉树来存数据，对任意一个节点[l,r)都有指向[l,(l+r)/2)和[(l+r)/2,r)的子节点。 由于是使用数组储存完全二叉树的情况，对于序号为k的节点，其字节点指向序号为k<em>2和k</em>2 +1的节点。</p><h3 id="split">split</h3><p>对任意一段区间[x,y)记为S，我们需要将这个区间分割到相应的节点上；比如说对于区间[3,10),我们应当将这个区间分割到节点19(3)、节点5([4,8))和节点12([8,10)). 这样，我们做运算的时候，只需要动这三个节点就好了。</p><pre><code>//递归版本
+vector&lt;s&gt;;
+void split(int x, int y, int id =1,int l =0, int r = n)
+{
+    if( x &gt;= r or l&gt;=y) return; // [l,r)与[x,y)不相交。
+    if(x &lt;= l &amp;&amp; r &lt;= y)
+    {
+        s.push_back(id);
+        return;
+    }
+    int mid = (l + r)/2;
+    split(x,y,id*2,l,mid);
+    split(x,y,id*2+1,mid,r);
+}
+</code></pre><p>递归的代码比较容易理解。我们从树根开始开始二分遍历，只有节点所表示的区间落在[x,y)内部的时候，我们才会采纳这个节点，这个节点不需要进一步细分了。</p><p>运行时间：直接从示意图上考虑， 我们split区间[l,r)时，[l,r)覆盖的一定是图上高度越高的内部节点，加上不超过两个的叶子节点，那么显然，时间是O(lgn)的。</p><pre><code>//迭代版本
+vector&lt;s&gt;;
+void split(int x, int y,int n)
+{
+    int l = x;
+    int r = y;
+    for(l +=n, r+=n ; l&lt; r; l &gt;&gt;= 1, r &gt;&gt;= 1)
+    {
+        if(l&amp;1) s.push_back(l++);
+        if(r&amp;1) s.push_back(--r);
+    }
+}
+</code></pre><p>迭代版本就难理解多了。迭代版本是自底向上的: + 首先解析 <code>l+=n, r+=n</code>这句，由于我们是使用数组储存的完全二叉树，那么叶子节点所在的序号即为l+n,r+n. + 如果l是右子节点，那么l的父亲节点一定包含[x,y)之外的区间，我们应采纳l节点，同时l++; + 如果r是右子节点，那么[x,y)区间应该落在r节点的左侧，此时我们应当采纳–r这个节点。</p><p>不管怎么说，这两个版本所要实现的功能是一致的。</p><h3 id="build">build</h3><pre><code>//递归版本
+void build(int id =1, int l =0, int r = n)
+{
+    if(r - l&lt; 2)
+    {
+        s[id]= a[l];
+        return;
+    }
+    int mid = (l + r)/2;
+    build(id *2 , l ,mid);
+    build(id*2+1,mid,r);
+    s[id] = s[id *2] + s[id*2 +1];
+}
+</code></pre><pre><code>// 迭代版本
+void build()
+{
+    // 预先在t[n,2n)间存储了叶节点数据。
+    for(int i =0; i&lt; n; ++i) scanf("%d", t + n + i);
+
+    for(int i = n-1; i&gt;0; --i)
+    {
+        t[i] = t[i&lt;&lt;1] + t[i&lt;&lt;1|1];    
+    }
+}
+
+</code></pre><h3 id="modify">modify</h3><pre><code>// 递归版本
+void modify(int p,int x, int id =1,int l =0, int r= n)
+{
+    s[id] += x - a[p];
+    if(r - l&lt; 2)
+    {
+        a[p] = x;
+        return;
+    }
+    int mid = (l + r)/2;
+    if( p&lt; mid)
+    {
+        modify(p,x,id*2,l,mid);
+    }
+    else
+    {
+        modify(p,x,id*2 +1,mid, r);
+    }
+}
+</code></pre><pre><code>// 迭代版本
+void modify(int p, int value)
+{
+    for(t[p +=n] = value; p&gt; 1;p&gt;&gt;=1) t[p&gt;&gt;1] = t[p] + t[p^1];
+}
+</code></pre><h3 id="sum">sum</h3><pre><code>// 递归
+int sum(int x, int y, int id=1, int l =0, int r=n)
+{
+    if(x &gt;=r || l&gt;=y) return 0;
+    if(x&lt;=l &amp;&amp;  r &lt;= y) return s[id];
+    int mid =(l + r)/2;
+    return sum(x,y,id*2,l, mid)
+    + sum(x,y,id*2+1,mid,r);
+}
+
+// 迭代
+int sum(int l, int r)
+{
+    int res = 0;
+    for(l +=n, r+=n; l&lt; r; l &gt;&gt;= 1 , r&gt;&gt;=1)
+    {
+        if(l&amp;1) res += t[l++];
+        if(r&amp;1) res += t[--r];
+    }
+    return res;
+}
+</code></pre><h3 id="lazy-propagation">lazy propagation</h3><p>延迟更新，只在合适的时候才去更新数据。 比如说，我们需要将[l,r)这个区间段内的数据统统加x,我们不用逐个将每个数据加x，而是使用一个额外数组记录，在需要的时候，再加上:</p><p>直接看原版代码不太好理解，这里做个简单的推导。</p><pre><code>// 对于节点id,区间为[l,r)的所有数据加x
+// s[id]我们仍然储存这个区间的和，但同时，我们使用lazy[id]来储存需要变更的数据x，但是具体的区间上我们并不去做更新
+// 事实上，更新x目前止于节点id.
+void upd(int id,int l,int r,int x)
+{
+    lazy[id] += x;
+    //s[id] += (r-l) * x;
+}
+void shift(int id, int l, int r)
+{
+    int mid = (l + r)/2;
+    upd(id*2,l ,mid, lazy[id]);
+    upd(id*2+1,mid, r, lazy[id]);
+    lazy[id] = 0;
+}
+// 这里把计算sum的步骤分离出来了
+// 更新区间数据时，我们只更新对应节点的数据
+void increase(int x, int y,int v, int id =1,int l = 0,int r = n)
+{
+    if(x &gt;= r or l &gt;= y) return;
+    if(x &lt;= l &amp;&amp; r &lt;= y)
+    {
+        upd(id, l,r,v); // 同split一样，当节点的区间[l,r)在[x,y)之间时，我们停止向下更新节点数据了
+        return; 
+    }
+    // shift(id, l,r); //这里稍微改动下
+    int mid = (l + r)/2;
+    increase(x, y, v, id*2,l,mid);
+    increase(x,y,v,id*2 +1,mid,r);
+    //s[id] = s[id*2] + s[id*2+1] ; //更新sum数据
+
+}
+</code></pre><p>在increase时我们标记了一些列需要更新数据的节点，但此时，如果我们直接取s[id]的话，是错误的。 考虑此时我们需要调用sum对区间[x,y)进行求值，首先，我们希望，在求值的时候，如果有碰到lazy[id]不为0的节点的话，我们能将这个节点的sum更新了,当然，这个节点的父节点也同样要更新。</p><pre><code>// 初次尝试
+int sum(int x, int y,int id= 1, int l =0, int r = n)
+{
+    if(x &gt;= r || l&gt;=y) return 0;
+    if(x &lt;=l &amp;&amp; r &lt;=y) 
+    {
+        s[id] += (lazy[id]* (r-l));
+        //lazy[id] = 0; 此时节点id的sum值虽然更新了，但是我们并没真的更新每个叶节点，所以我们必须留着lazy[id]
+        return s[id];
+    }
+    int mid = (l + r)/2;
+    return sum(x,y,id*2, l,mid) +
+        sum(x,y,id*2 +1 ,mid ,r);
+}
+</code></pre><p>可以看到，第一次sum的时候我们成功更新了s[id]的数据，但下次查询之前，lazy[id]必须要清除为0。这意味着，如果某个节点id标记了lazy[id],那么在第一次访问这个节点的s[id]时，我们要同时将s[id]更新到正确的值并且将lazy[id]清除为0. 我们对任意一节点分析下lazy[id]的情况：</p><ul><li>如果这个节点时叶节点，清楚lazy数据即可；</li><li>如果这个节点是某个内部节点的话，记得我们设置lazy的方法，是从根节点往下设置的，那么，我们必须同时去设置这个节点的子节点，即id<em>2 与 id</em>2 +1这两个节点。</li></ul><pre><code>// 第二版
+//在更新sum时，我们同时清楚lazy数据
+int sum(int x, int y, int id=1, int l = 0, int r = n)
+{
+    if(x &gt;= r|| l &gt;= y) return 0;
+    if( x &lt;= l &amp;&amp; r &lt;= y)
+    {
+        s[id] += (lazy[id] * (r-l));
+        shift(id,l,r);
+        return s[id];
+    }
+    int mid = (l + r)/2;
+    return sum(x,y,id*2, l,mid) + sum(x,y,id*2 +1,mid,r);
+}
+</code></pre><p>这样，sum数据的确更新成功，lazy数据也传导到子节点了，但是，我们发现，递归调用的中间路径上，遇到的内部节点的lazy[id]并没用做任何操作，而且，就我们设置lazy的方法来说，我们设置节点的子节点并没有设置lazy数据，换句话说，我们计算sum时，极有可能某个节点明明其父亲节点已经设置过了lazy了，但是由于我们并没有让lazy数据propagate down，在这个子节点上的sum数据获取是错误的。</p><p>再回到我们第二版的sum函数，我们是自顶向下进行split的，这意味着，我们可以将lazy数据自上向下传播开来。</p><pre><code>// 我们需要一个只传播lazy数据，但是不重设lazy数据的函数
+void shiftnoreset(int id, int l, int r)
+{
+    int mid = (l + r)/2;
+    upd(id*2,l ,mid, lazy[id]);
+    upd(id*2+1,mid, r, lazy[id]);
+    //lazy[id] = 0;
+}
+
+// 第三版，在sum时，我们自顶向下的将lazy数据传播开来
+int sum(int x,int y ,int id = 1,int l =0 ,int r = n)
+{
+    if(x &gt;= r ||  l &gt;= y) return 0;
+    if( x &lt;= l &amp;&amp; r &lt;= y)
+    {
+        s[id] += (lazy[id] * (r-l));//只在这里清除了lazy
+        shift(id,l,r);
+        return s[id];
+    }
+    shiftnoreset(id,l,r);
+    int mid = (l + r)/2;
+    return sum(x,y,id*2, l,mid) + sum(x,y,id*2 +1,mid,r);
+}
+</code></pre><p>第三版，虽然我们将lazy数据传播开来了，但是，我们只在最终节点处清楚了lazy数据，对于路径上的其它内部节点，下次再次访问的时候，必然会出现lazy的重复计算的问题。</p><pre><code>// 第四版，我们将lazy数据传播开来后，计算sum值，更新sum[id],那么此时的lazy[id]就不再有用了，可以方心清零了。
+int sum(int x, int y, int id=1, int l =0, int r = n)
+{
+    if(x &gt;= r|| l &gt;= y) return 0;
+    if(x &lt;= l &amp;&amp; r &lt;= y)
+    {
+        s[id] += (lazy[id] * (r-1));
+        shift(id,l,r);
+        return s[id];
+    }
+    shift(id,l,r);// 我们传播开来lazy后就直接清零了
+    int mid = (l + r)/2;
+
+    s[id] =  sum(x,y,id*2, l,mid) + sum(x,y,id*2 +1,mid,r);
+    return s[id];
+}
+</code></pre><p>现在我们来研究下原版的代码：</p><pre><code>void upd(int id, int l, int r, int x)
+{
+    lazy[id] += x;
+    s[id] += (r - l) *x;
+}   
+void shift(int id,int l, int r)
+{
+    int mid = (l + r)/2;
+    upd(id *2 , l ,mid,lazy[id]);
+    upd(id*2+1,id, r, lazy[id]);
+    lazy[id] = 0;
+}
+void increase(int x,int y,int v, int id=1,int l =0, int r =n)
+{
+    if(x &gt;= r|| l &gt;= y) return;
+    if(x&lt;= l || r &lt;= y) 
+    {
+        upd(id, l,r, v);
+        return ;
+    }
+    shift(id ,l ,r);
+    int mid = (l + r)/2;
+    increase(x, y, v, id*2 l ,mid);
+    increase(x, y ,v, id*2 +1, mid,r);
+    s[id] = s[id*2] + s[id*2+1];
+}
+int sum(int x,int y, int id = 1, int l = 0,  int r = n)
+{
+    if(x &gt;= r || l &gt;= y) return 0;
+    if(x&lt;= l &amp;&amp; r &lt;=y ) return s[id];
+    shift(id,l,r);
+    int mid = (l+r)/2;
+    return sum(x, y, id*2, l ,mid) + sum(x, y,id*2 +1, mid,r);
+}
+
+</code></pre><p>这里使用下图的结构，选择更新[0,8)这个区间+1,来研究下,不妨设原来的所有数据都是0。 <a href="/assets/segmenttree/basic.png">!operation 2</a></p><ul><li>从根节点[0,16)入手，更新lazy[1]到节点2与节点3。此时lazy[1] =0,所以没有任何变化；</li><li>进入左侧子节点[0,8),我们此时进入终止逻辑，更新节点2的lazy数据，lazy[2] = 1,更新sum值，s[2] += (8 - 0) * 1 ;</li><li>右侧的不做任何更新，循环停止。</li></ul><p>我们可以看到，此时，除了终止节点，所有路径上的内部节点均更新过了sum值，且lazy数据均为0。 对于终止节点和终止节点之下的节点数据，在没有访问到时，我们可以放心的不管它，而在访问到时，我们进入sum函数逻辑。</p><p>假设我们需要求sum(2,3)的值。</p><ul><li>我们从节点2开始lazy数据一路向下传播，更新节点4与5，5不向下传播了；</li><li>节点4继续，更新节点8与节点9，8不继续向下传播了；</li><li>节点9注意到，直接返回s[id]了。这几个节点的sum数据在lazy传播过来的同时就更新了，所以这个数据时正确的。</li></ul><p>于是，我们得到正确的答案。</p><span class="meta"><time datetime="2020-01-16T00:00:00+08:00">January 16, 2020</time> &middot; </span> <!--<span class="meta"><time datetime="2020-01-16T00:00:00+08:00">January 16, 2020</time> &middot; </span> --></section></main></body></html>

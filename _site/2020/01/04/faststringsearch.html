@@ -1,0 +1,181 @@
+<!DOCTYPE html><html lang="en" ><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="Jekyll v4.0.1" /><meta property="og:title" content="BM算法（字符串快速匹配算法）" /><meta property="og:locale" content="en_US" /><meta name="description" content="综述 本文目的在于读论文“A Fast String Searching Algorithm”" /><meta property="og:description" content="综述 本文目的在于读论文“A Fast String Searching Algorithm”" /><link rel="canonical" href="http://localhost:4001/2020/01/04/faststringsearch" /><meta property="og:url" content="http://localhost:4001/2020/01/04/faststringsearch" /><meta property="og:site_name" content="只砖片瓦" /><meta property="og:type" content="article" /><meta property="article:published_time" content="2020-01-04T00:00:00+08:00" /><meta name="twitter:card" content="summary" /><meta property="twitter:title" content="BM算法（字符串快速匹配算法）" /><meta name="twitter:site" content="@" /> <script type="application/ld+json"> {"headline":"BM算法（字符串快速匹配算法）","dateModified":"2020-01-04T00:00:00+08:00","datePublished":"2020-01-04T00:00:00+08:00","mainEntityOfPage":{"@type":"WebPage","@id":"http://localhost:4001/2020/01/04/faststringsearch"},"description":"综述 本文目的在于读论文“A Fast String Searching Algorithm”","url":"http://localhost:4001/2020/01/04/faststringsearch","@type":"BlogPosting","@context":"https://schema.org"}</script><title> BM算法（字符串快速匹配算法） - 只砖片瓦</title><link rel="shortcut icon" href="/favicon.png"><link rel="alternate" type="application/atom+xml" title="只砖片瓦" href="/atom.xml"><link rel="alternate" type="application/json" title="只砖片瓦" href="http://localhost:4001/feed.json" /><link rel="sitemap" type="application/xml" title="sitemap" href="/sitemap.xml" /><style> *,:after,:before{box-sizing:border-box;background-color:inherit;color:inherit;margin:0;padding:0}body{font-family:system-ui, sans-serif;-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;line-height:1.5;font-size:1rem;color:#16171a}nav ul{border-right:1px solid #edf2f7}a{color:#000;text-decoration-skip-ink:auto;text-decoration:underline}pre{margin:.5rem 0;padding:.5rem}.post p{margin:.5rem 0}.post h1,.post h2,.post h3,.post h4{margin:1rem 0}.post h2:first-child,.project h2:first-child,.photo h2:first-child{margin-top:0}.meta{margin:2rem 0}code,pre{background:#ecedee}code{padding:.1rem}pre code{border:none}pre{padding:1rem;overflow-x:auto}img{max-width:100%}hr{background:#000;height:1px;border:0}header{flex-basis:10rem;flex-grow:1;position:relative}header a{text-decoration:none}header li{margin-bottom:.2rem;text-align:right;margin-right:2rem}header a.active{font-weight:bold}header,section{padding:1rem}blockquote{font-style:italic;border-left:5px solid #ececec;padding-left:1rem}h1,h2,h3,h4,h5{line-height:1;margin:1rem 0;font-weight:600}section h1:first-child{margin-top:0}strong,b{font-weight:bold}.photos ul{list-style:none}.photos li{margin-bottom:1.5rem}.photo picture,.project picture{margin-bottom:0.5rem}.posts ul,header ul{list-style:none}.posts li{align-items:center;display:flex;justify-content:space-between;margin-bottom:.5rem}.posts li a,.posts li div,.projects li a{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-decoration:none}.posts li time,.projects li time{padding-left:1rem;white-space:nowrap;font-variant-numeric:tabular-nums}main{display:flex;flex-wrap:wrap;max-width:60rem;margin:2rem auto;padding:1rem}@media screen and (max-width: 45rem){header li{display:inline;margin-right:1rem}.logo{padding-bottom:1rem}header ul{border-bottom:1px solid #edf2f7;padding-bottom:2rem}nav ul{border-right:0px}.photos ul{margin-top:0.5rem}}section{flex-basis:0;flex-grow:999;min-width:70%;display:flex;flex-direction:column}figcaption{font-size:smaller}</style></head><body><main role="main"><header role="banner"> <!--<h1 class="logo">只砖片瓦</h1>--><nav role="navigation"><ul><li><a href="/" >Writing</a></li><li><a href="/about" >About</a></li><li><a href="/search" >Search</a></li><li><a href="/atom.xml" >Rss</a></li></ul></nav></header><section class="post"><h2>BM算法（字符串快速匹配算法）</h2><h2 id="综述">综述</h2><p>本文目的在于读论文<a href="https://www.cs.utexas.edu/users/moore/publications/fstrpos.pdf">“A Fast String Searching Algorithm”</a></p><!--more--><p>字符串string 匹配串P，长度patlen。 对字符串T和匹配串P进行匹配，如果自右向左进行匹配，而不是自左向右，有如下观察：</p><ol><li>如果对于第一个匹配，即P[patlen]处的字符X和T[i]处的字符Y不匹配，而匹配串P中不含任何Y，那么 我们下次匹配的时候，可以直接跳过Y，那么下次匹配的时候可以直接右移patlen的长度即可。 <img src="/assets/faststringsearch/2019_12_23_21_36.46.bmp" alt="operation 1" /></li><li>如果P中包含Y,假设Y的字符的位置距离P右侧的距离为delta，那么此时，我们可以直接将P右移delta的长度， 直接让P中右边第一个Y出现的位置对上我们当前string中正在匹配的字符Y。 <img src="/assets/faststringsearch/2019_12_23_22_07.51.bmp" alt="operation 2" /></li><li>现在假设我们自右边开始的匹配一一满足，那么我们可以一直自右向左的匹配。那么此时只有 两种结果，或者我们全部匹配完了P，此时我们匹配成功了；或者我们在某个位置匹配失败。很明显， 现在感兴趣的是我们在某个位置匹配失败的情况。我们把在某个失败之前匹配成功的距离记为m。 <img src="/assets/faststringsearch/2019_12_23_22_23.17.bmp" alt="operation 3" /> 3(a) 我们可以基于之前的逻辑，在X的左侧，我们找到第一个出现的Y，我们假设这个Y为Y1， 将Y1右移动到我们string中目前Y的位置。假设这个Y1距离X的长度为k，那么我们只需右移k即可。 <img src="/assets/faststringsearch/2019_12_24_10_17.34.bmp" alt="operation 4" /> 此时，我们重新开始匹配的话，通用从P的最右端开始匹配，匹配的位置距离当前位置k+m的长度。 假设，P中最右侧的Y1出现在X的右侧，此时，P可以使得Y1与Y进行匹配，但这并不是我们想要的。 或者说，对于回退P的验证，我们应该在之前的搜寻中包括了。此时，我们简单的右移1. <img src="/assets/faststringsearch/2019_12_24_10_54.53.bmp" alt="operation 5" /> <img src="/assets/faststringsearch/2019_12_24_10_57.36.bmp" alt="operation 6" /> 3(b)现在我们看下另一种情况。同样在第一次不匹配之前，我们已经匹配了m个字符了，我们把这个字符串 称为子串sP，那么，我们可预想到，在下次右移后，这个子串sP一定是匹配的，或者说sP在P中，除了末尾出现 一次，还在之前也出现过。且这个子串的前序字符Z一定与X不一致。 <img src="/assets/faststringsearch/2019_12_24_11_23.38.bmp" alt="operation 7" /> <img src="/assets/faststringsearch/2019_12_24_11_35.25.bmp" alt="operation 8" /></li></ol><p>目前为止，我们已经说了三种可以跳转的情况，我们只需从这三种情况中选择最远的跳转即可。</p><h2 id="算法">算法</h2><pre><code>input:	string, pat
+
+		stringlen := length of string
+		i := patlen
+top:	
+		if i&gt; stringlen then return false
+		j := patlen
+loop:	
+		if j==0 then return i+1
+		if string(i) == pat(j) then
+			j = j - 1
+			i = i - 1
+			goto loop
+			close;
+		i = i + max(delta1(string(i)), delta2(j))
+		goto top
+</code></pre><pre><code>delta1(char) :=  if char does not occur in pat, 
+					then patlen;
+				else patlen - j,
+				where j is the maximum integer such that
+				pat(j) == char.
+delta2(j)	:= k + m
+			k : the discovered occurence (in string) of the last patlen-j characters of pat
+			m : additional distance we have already matched
+			:= patlen + 1 - rpr(j)
+rpr(j)		:= the rightmost plausible reoccurrence 
+</code></pre><h3 id="delta1的构造">delta1的构造</h3><pre><code>make_delta1:
+
+input:	pat
+		
+		patlen := pat.length
+		delta1 := array[256] // 把所有字符表都遍历一遍, array 从1开始
+		j := 1;
+loop:
+		delta1[j] := patlen
+		j := j + 1
+		if j &lt;= 256 then goto loop
+		j := 1;
+delta:
+		delta1[pat[j]] := patlen - j
+		if j &lt;= patlen then goto delta
+		
+</code></pre><h3 id="delta2的构造">delta2的构造</h3><p>我们先构造rpr表，即对每一个后缀找到the rightmost plausible reoccurrence. 这里论文中没有给出明确的方案，这里搜寻了下<a href="https://en.wikipedia.org/wiki/Boyer%E2%80%93Moore_string-search_algorithm">wiki</a> 采用wiki里提到的delta2的实现方案，并且只考虑rpr的情况。这里统一下标从1开始计算。</p><pre><code>suffix_length: // 算出在pos处最长后缀的长度
+
+input:	pat, pos
+
+		patlen := pat.length
+		i := 0
+		
+loop:	if (pat[pos-i] == word[patlen-i]) and ( i&lt; pos) then
+			++i
+			goto loop
+			
+		return i
+
+</code></pre><pre><code>make_delta2:
+
+input:	pat
+
+		patlen := pat.length
+		p := 1		
+loop:	
+		if p &lt; patlen then
+			slen := suffix_length(pat, p)
+			if ((p-slen &lt;=0) or // 这里加个前序不存在的判定,wiki里这种情况通过loop1考虑了
+				(pat[p-slen] != pat[patlen - slen]) then
+				delta2[patlen - slen] = patlen - p + slen
+			p ++
+			goto loop
+</code></pre><h2 id="实现细节">实现细节</h2><p>使用delta0替换delta1，<code>delta0(pat(patlen)) := large := stringlen + patlen + 1</code></p><pre><code>input: 	string, pat
+
+		stringlen := string.length
+		patlen := pat.length
+		i := patlen
+		if i &gt; stringlen then return false
+fast:	
+		i := i + delta0(string(i))
+		if i&lt;= stringlen then goto fast
+undo:	if i &lt;= large then 	return false
+		i := (i - large) -1
+		j := patlen -1
+slow:	if j == 0 return i + 1
+		if string(i) == pat(j)
+			then 
+			j := j-1
+			i := i-1
+			goto slow
+			close
+		i := i + max(delta1(string(i)), delta2(j))
+		goto fast			
+</code></pre><p>这部分代码比较难理解。是作者为了优化算法速度做的实现，原理与之前的版本是一致的。这里细细剖析下。</p><p>首先看下<code>fast</code>循环进来和结束的状态与条件：</p><ul><li>程序开始时进入，此时<code>i &lt;= stringlen</code>，或者确切的说<code>i := patlen</code>。进入<code>fast</code>后运行<code>i := i + string(patlen)</code>。<ul><li>如果，<code>string(patlen)</code>与<code>pat(patlen)</code>不相等，此时右移到下一次匹配的位置；</li><li>如果，<code>string(patlen)</code>与<code>pat(patlen)</code>相等，此时右移large；</li><li>判断 <code>i &lt;= stringlen</code>，如果<code>i &gt; stringlen</code>，并且<code>i &gt; large</code>，这说明我们的末尾字符匹配成功，可以进入<code>slow</code>逻辑继续匹配。</li><li>如果<code>i&gt; stringlen</code>,但<code>i &lt;= large</code>，这说明，我们末尾字符没有匹配成功，但是<code>i</code>移出了string的范围，匹配失败。</li></ul></li><li>从<code>slow</code>中进入，此时<code>string(i) != pat(j)</code>，出现了第一次不匹配，<code>i</code>更新为<code>i + max(delta1(string(i)), delta2(j))</code>， 注意这里，使用的仍然是<code>delta1</code>。</li></ul><p><code>slow</code>的逻辑与原版算法基本一致。</p><p>这版算法将对<code>patlen</code>处字符的匹配单独提出，作者评估过80%的匹配时间都消耗在<code>fast</code>loop，通过将这部分代码单独提出，使用机器指令单独编码，可以加快算法的运行 速度。</p><h2 id="理论分析">理论分析</h2><p>这部分见论文吧，通过概率模型分析，运行时间是c*(i + patlen) c&lt; 1。</p><h2 id="代码实现">代码实现</h2><pre><code>
+#include &lt;iostream&gt;
+#include &lt;algorithm&gt;
+
+
+
+void make_delta1(const char* pat, int patlen, int* delta1)
+{	
+	for(int i = 0; i &lt; 256; ++i)
+	{
+		delta1[i] = patlen;
+	}
+	for(int i = 0; i &lt; patlen; ++i)
+	{
+		delta1[(int)pat[i]] = patlen - i -1; // we start index from zero	
+	}
+}
+
+int suffix_length(const char* pat, int patlen,int pos)
+{
+	int i = 0;
+	while( i &lt;= pos 
+			&amp;&amp; pat[pos-i] == pat[patlen-i-1])
+	{
+			++i;
+			
+	}
+	return i;
+}
+
+
+
+void make_delta2(const char* pat, int patlen, int* delta2)
+{	
+	// 默认正在p处不匹配时，直接移动到+1的位置进行新的匹配，
+	// 最慢的
+	// 默认值
+	for(int p = 0; p &lt; patlen; ++p)
+	{
+		delta2[p] = patlen - p ;
+	}
+	for(int p = 0; p &lt; patlen-1;++p)
+	{
+		int slen = suffix_length(pat, patlen, p);
+		
+		if(p - slen &lt; 0 || pat[p-slen] != pat[patlen-slen])
+		{
+			delta2[patlen-slen -1] = patlen - p -1 + slen;
+			//std::cout&lt;&lt;" set delta2 "&lt;&lt;patlen-slen -1 &lt;&lt; " = "&lt;&lt;patlen-p-1 + slen&lt;&lt;std::endl;
+		}
+	}
+
+}
+
+int match(const char* txt, int txtLen, const char* pat, int patlen)
+{
+		
+		int delta1[256];
+		make_delta1(pat, patlen, delta1);
+		
+		int* delta2 = new int[patlen];
+		make_delta2(pat, patlen, delta2);
+		
+		int j = patlen-1;
+		int i = patlen - 1;
+		while( i &lt; txtLen)
+		{
+			int j = patlen-1;
+			//std::cout&lt;&lt;" i = "&lt;&lt;i&lt;&lt;" j = "&lt;&lt;j&lt;&lt;std::endl;
+			while( j &gt;= 0)
+			{
+				//std::cout&lt;&lt;" compare "&lt;&lt;txt[i] &lt;&lt; " and "&lt;&lt;pat[j]&lt;&lt;std::endl;
+				if(txt[i] == pat[j])
+				{
+					j--;
+					i--;
+				}
+				else{
+					break;
+				}
+			}
+			if(j &lt;0)
+			{
+				return i + 1;
+			}
+			//std::cout&lt;&lt;" delta1 = "&lt;&lt;delta1[txt[i]] &lt;&lt; " delta2 = "&lt;&lt;delta2[j]&lt;&lt;std::endl;
+			i = i + std::max(delta1[txt[i]],delta2[j]);
+		}
+		return -1;
+}
+</code></pre><h2 id="附">附</h2><p>在 “Knuth D.E. Morris J.H., and Pratt, V.R. Fast pattern matching in strings”中Knuth提出了线性时间 构造delta2的方法。</p><span class="meta"><time datetime="2020-01-04T00:00:00+08:00">January 4, 2020</time> &middot; </span> <!--<span class="meta"><time datetime="2020-01-04T00:00:00+08:00">January 4, 2020</time> &middot; </span> --></section></main></body></html>

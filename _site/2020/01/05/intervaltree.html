@@ -1,0 +1,673 @@
+<!DOCTYPE html><html lang="en" ><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="Jekyll v4.0.1" /><meta property="og:title" content="interval trees" /><meta property="og:locale" content="en_US" /><meta name="description" content="本文目的： 研究interval trees来加深对红黑树的理解。" /><meta property="og:description" content="本文目的： 研究interval trees来加深对红黑树的理解。" /><link rel="canonical" href="http://localhost:4001/2020/01/05/intervaltree" /><meta property="og:url" content="http://localhost:4001/2020/01/05/intervaltree" /><meta property="og:site_name" content="只砖片瓦" /><meta property="og:type" content="article" /><meta property="article:published_time" content="2020-01-05T00:00:00+08:00" /><meta name="twitter:card" content="summary" /><meta property="twitter:title" content="interval trees" /><meta name="twitter:site" content="@" /> <script type="application/ld+json"> {"headline":"interval trees","dateModified":"2020-01-05T00:00:00+08:00","datePublished":"2020-01-05T00:00:00+08:00","mainEntityOfPage":{"@type":"WebPage","@id":"http://localhost:4001/2020/01/05/intervaltree"},"description":"本文目的： 研究interval trees来加深对红黑树的理解。","url":"http://localhost:4001/2020/01/05/intervaltree","@type":"BlogPosting","@context":"https://schema.org"}</script><title> interval trees - 只砖片瓦</title><link rel="shortcut icon" href="/favicon.png"><link rel="alternate" type="application/atom+xml" title="只砖片瓦" href="/atom.xml"><link rel="alternate" type="application/json" title="只砖片瓦" href="http://localhost:4001/feed.json" /><link rel="sitemap" type="application/xml" title="sitemap" href="/sitemap.xml" /><style> *,:after,:before{box-sizing:border-box;background-color:inherit;color:inherit;margin:0;padding:0}body{font-family:system-ui, sans-serif;-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;line-height:1.5;font-size:1rem;color:#16171a}nav ul{border-right:1px solid #edf2f7}a{color:#000;text-decoration-skip-ink:auto;text-decoration:underline}pre{margin:.5rem 0;padding:.5rem}.post p{margin:.5rem 0}.post h1,.post h2,.post h3,.post h4{margin:1rem 0}.post h2:first-child,.project h2:first-child,.photo h2:first-child{margin-top:0}.meta{margin:2rem 0}code,pre{background:#ecedee}code{padding:.1rem}pre code{border:none}pre{padding:1rem;overflow-x:auto}img{max-width:100%}hr{background:#000;height:1px;border:0}header{flex-basis:10rem;flex-grow:1;position:relative}header a{text-decoration:none}header li{margin-bottom:.2rem;text-align:right;margin-right:2rem}header a.active{font-weight:bold}header,section{padding:1rem}blockquote{font-style:italic;border-left:5px solid #ececec;padding-left:1rem}h1,h2,h3,h4,h5{line-height:1;margin:1rem 0;font-weight:600}section h1:first-child{margin-top:0}strong,b{font-weight:bold}.photos ul{list-style:none}.photos li{margin-bottom:1.5rem}.photo picture,.project picture{margin-bottom:0.5rem}.posts ul,header ul{list-style:none}.posts li{align-items:center;display:flex;justify-content:space-between;margin-bottom:.5rem}.posts li a,.posts li div,.projects li a{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-decoration:none}.posts li time,.projects li time{padding-left:1rem;white-space:nowrap;font-variant-numeric:tabular-nums}main{display:flex;flex-wrap:wrap;max-width:60rem;margin:2rem auto;padding:1rem}@media screen and (max-width: 45rem){header li{display:inline;margin-right:1rem}.logo{padding-bottom:1rem}header ul{border-bottom:1px solid #edf2f7;padding-bottom:2rem}nav ul{border-right:0px}.photos ul{margin-top:0.5rem}}section{flex-basis:0;flex-grow:999;min-width:70%;display:flex;flex-direction:column}figcaption{font-size:smaller}</style></head><body><main role="main"><header role="banner"> <!--<h1 class="logo">只砖片瓦</h1>--><nav role="navigation"><ul><li><a href="/" >Writing</a></li><li><a href="/about" >About</a></li><li><a href="/search" >Search</a></li><li><a href="/atom.xml" >Rss</a></li></ul></nav></header><section class="post"><h2>interval trees</h2><h2 id="本文目的-研究interval-trees来加深对红黑树的理解">本文目的： 研究interval trees来加深对红黑树的理解。</h2><!--more--><h3 id="augment-tree">Augment Tree</h3><p>通过对已有的数据结构附加额外的属性，达到实现额外功能的目的。 附加的额外属性要保证原数据结构的增删改查的时间复杂度不会有渐进意义上的增加。</p><h2 id="interval-trees">Interval Trees</h2><p>通过对红黑树附加额外的数据，我们要来实现对不同intervals 的组织。</p><p>我们将每个interval看作一个节点x,节点x中含有额外的数据，x.int.low和x.int.high表示这个interval的区间， 所有节点按照x.int.low作为key来组织。同时含有属性x.max,表示以x为根节点的子树上所有节点的high的最大值,即<code>x.max = max(x.int.high,x.left.max,x.right.max)</code>。</p><p>我们先证明对于这棵树的delete和insert操作时间仍然时O(lgn)的。</p><p>Proof:</p><ul><li>向interval tree中插入一个节点分为两步：1. 将节点x插入到合适的位置；2. 如果插入的节点不满足红黑树的属性，我们需要做fixup。 由于插入节点x及其所有祖先节点的max均有可能发生改变，我们需要更新O(lgn)个节点的属性值;对于需要旋转的节点，我们至多只需要做两次旋转，每次旋转只会动两个节点。我们最终只需要动O(lgn)个节点的属性。</li><li>向interval tree中删除一个节点同样可以分为两步：1.删除指定节点，将后继节点移动到被删除的节点的位置；2. 后继节点可能发生不满足红黑树属性的情况，需要做fixup.我们知道删除操作最多只会发生3次旋转，于是我们更新属性的时间最多仍然是O(lgn).</li></ul><h2 id="查询">查询</h2><pre><code>INTERVAL-SEARCH(T,i)
+    x = T.root
+    while x != T.nil and i does not overlap x.int
+        if x.left != T.nil and x.left.max &gt;= i.low
+            x = x.left
+        else x = x.right
+    return x
+</code></pre><p>Proof:</p><p>考察循环的不变性： 如果T有和interval i相交的interval，那么这个interval必然位于以x为根节点的子树上。</p><p>Initialization:</p><p>初始化时，x作为根节点，一定可以保证假设的正确。</p><p>Maintenance:</p><ul><li>如果当前节点x与i相交，循环终止。</li><li>如果循环进入x的右子树，说明此时x的左子树为空或者左子树的max &lt; i.low. 这两种情况均保证左子树不含与i相交的interval。</li><li>如果循环进入x的左子树，此时，必然有x.left.max &gt;= i.low。此时可以分为两种情况:<ul><li>如果左子树中不含和i相交的interval。那么此时必然有,对任何左子树中满足i’.high &gt;= i.low的节点必然i.high &lt; i’.low。又由于我们树是按照interval.low进行组织的，这意味着i.high &lt; 所有右侧子树节点的int.low.</li><li>如果左子树中含和i相交的interval。此时假设满足，进入左子树继续处理。</li></ul></li></ul><p>Termination:</p><p>如果循环终止于T.nil,由以上推导，可知，T中不含和i相交的节点。或者循环终止与找到某个节点x与i相交。</p><h2 id="代码实现">代码实现</h2><p>这里借用了红黑树的结构，同时对红黑树做了一些重构。</p><pre><code>#ifndef __RED_BLACK_TREE_H__
+#define __RED_BLACK_TREE_H__ 1
+#include &lt;iostream&gt;
+#include &lt;queue&gt;
+
+const int RED = 0;
+const int BLACK = 1;
+const int BLACK_BLACK= 3;
+const int BLACK_RED = 4;
+template&lt;class T&gt;
+class BinNode
+{
+    public:
+        BinNode (const T&amp; data)
+            :_data(data)
+        {
+            _color = BLACK;
+            _lc = NULL;
+            _rc = NULL;
+            _p = NULL;
+        }
+        virtual ~BinNode (){}
+
+        int &amp; color() {return _color;}
+        BinNode*&amp; lc(){return _lc;}
+        BinNode*&amp; rc(){return _rc;}
+        BinNode*&amp; p(){return _p;}
+
+        T&amp; data(){return _data;}
+
+    private:
+    private:
+        /* data */
+        int _color;
+        BinNode* _lc;
+        BinNode* _rc;
+        BinNode* _p;
+        T _data;
+};
+
+template&lt;class T,class Node&gt;
+class BinTree
+{
+    public:
+class BinNode
+{
+    public:
+        BinNode (const Node&amp; data)
+            :_data(data)
+        {
+            _color = BLACK;
+            _lc = NULL;
+            _rc = NULL;
+            _p = NULL;
+        }
+        virtual ~BinNode (){}
+
+        int &amp; color() {return _color;}
+        Node*&amp; lc(){return _lc;}
+        Node*&amp; rc(){return _rc;}
+        Node*&amp; p(){return _p;}
+
+        T&amp; data(){return _data;}
+
+    private:
+    private:
+        /* data */
+        int _color;
+        BinNode* _lc;
+        BinNode* _rc;
+        BinNode* _p;
+        T _data;
+};
+
+
+    public:
+
+        static Node* nil;
+    public:
+        BinTree()
+        {
+            _root = nil;
+        }
+        void insert(Node* node);
+        Node* search(const T &amp; t) const;
+
+        void deletenode(Node* z);
+        void dfs();
+        void bfs();
+        Node* root(){return _root;}
+        void LeftRotate(Node* x) {left_rotate(x);}
+        void RightRotate(Node* x){right_rotate(x);}
+    protected:
+        virtual void left_rotate(Node* x);
+
+        virtual void right_rotate(Node* x);
+    private:
+        Node* search_recur(Node* node, const T&amp; t) const;
+        void insert_fixup(Node* node);
+        void transplant(Node* u, Node* v);
+        Node* minimum(Node* node);
+
+        void delete_fixup(Node* x);
+
+        void dfs_recur(Node* node);
+
+    protected:
+        Node* _root;
+    public:
+        static Node* make_node(const T&amp; t)
+        {
+            Node* node = new Node(t);
+            node-&gt;color() = RED;
+
+            node-&gt;lc() = nil;
+            node-&gt;rc() = nil;
+            node-&gt;p() = nil;
+
+            return node;
+        }
+
+};
+
+
+template&lt;class T&gt;
+class RedBlackTree:public BinTree&lt;T,BinNode&lt;T&gt;&gt;
+{
+};
+
+template&lt;class T,class Node&gt;
+Node* BinTree&lt;T,Node&gt;::nil = new Node(-1);
+
+template&lt;class T,class Node&gt;
+Node* BinTree&lt;T,Node&gt;::search(const T&amp; t) const
+{
+    return search_recur(_root, t);
+}
+template&lt;class T,class Node&gt;
+Node* BinTree&lt;T,Node&gt;::search_recur(Node* node, const T&amp; t) const
+{
+    if(node == nil) return nil;
+    if(node-&gt;data() == t) return node;
+    if(node-&gt;data() &lt; t)
+    {
+        return search_recur(node-&gt;rc(),t);
+    }
+    if (node-&gt;data() &gt; t)
+    {
+        return search_recur(node-&gt;lc(),t);
+    }
+    return nil;
+
+}
+    template&lt;class T,class Node&gt;
+void BinTree&lt;T,Node&gt;::dfs()
+{
+    dfs_recur(_root);
+}
+static const char* getColor(int color)
+{
+    if (color == RED)
+    {
+        return "red";
+    }
+    else if(color == BLACK)
+    {
+        return "black";
+    }
+    else if(color == BLACK_BLACK)
+    {
+        return "black_black";
+    }
+    else if(color == BLACK_RED)
+    {
+        return "black_red";
+    }
+    return "";
+}
+    template &lt;class T,class Node&gt;
+void BinTree&lt;T,Node&gt;::bfs()
+{
+    if (_root == nil) return;
+    std::queue&lt;Node* &gt; q;
+    q.push(_root);
+    int cur = 1;
+    int next =0;
+    while(q.size() &gt; 0)
+    {
+        Node* node = q.front();
+
+        q.pop();
+        std::cout&lt;&lt;node-&gt;data() &lt;&lt; " "&lt;&lt;getColor(node-&gt;color())&lt;&lt;"    ";
+
+
+        if(node-&gt;lc() != NULL)
+        {
+            q.push(node-&gt;lc());
+            next ++;
+        }
+        if(node-&gt;rc() != NULL)
+        {
+            q.push(node-&gt;rc());
+            next += 1;
+        }
+
+        cur--;
+        if(cur &lt;=0)
+        {
+            std::cout&lt;&lt;std::endl;
+            cur = next;
+            next = 0;
+        }
+    }
+    std::cout&lt;&lt;std::endl;
+}
+
+    template&lt;class T,class Node&gt;
+void BinTree&lt;T,Node&gt;::dfs_recur(Node* node)
+{
+    if(node-&gt;lc() != nil)
+    {
+        dfs_recur(node-&gt;lc());
+    }
+    if(node-&gt;rc() != nil)
+    {
+        dfs_recur(node-&gt;rc());
+    }
+    std::cout&lt;&lt;" "&lt;&lt;node-&gt;data()&lt;&lt;" ";
+}
+
+    template&lt;class T,class Node&gt;
+Node* BinTree&lt;T,Node&gt;::minimum(Node* node)
+{
+
+    while(node-&gt;lc() != nil)
+    {
+        node = node-&gt;lc();
+    }
+    return node;
+
+
+}
+
+    template&lt;class T,class Node&gt;
+void BinTree&lt;T,Node&gt;::transplant(Node* u, Node* v)
+{
+    if(u-&gt;p() == nil)
+    {
+        _root = v;
+    }
+    else if(u == u-&gt;p()-&gt;lc())
+    {
+        u-&gt;p()-&gt;lc() = v;
+    }
+    else
+    {
+        u-&gt;p()-&gt;rc() = v;
+    }
+    v-&gt;p() = u-&gt;p();
+}
+    template&lt;class T,class Node&gt;
+void BinTree&lt;T,Node&gt;::deletenode(Node* z)
+{
+    Node* y = z;
+    Node* x= nil;
+    int y_original_color = y-&gt;color();
+    if (z-&gt;lc() == nil)
+    {
+        x = z-&gt;rc();
+        transplant(z,z-&gt;rc());
+    }
+    else if(z-&gt;rc() == nil)
+    {
+        x = z-&gt;lc();
+        transplant(z,z-&gt;lc());
+    }
+    else
+    {
+        y = minimum(z-&gt;rc());
+        y_original_color = y-&gt;color();
+        x = y-&gt;rc();
+        if(y-&gt;p() == z)
+        {
+            x-&gt;p() = y;
+        }
+        else
+        {
+            transplant(y,y-&gt;rc());
+            y-&gt;rc() = z-&gt;rc();
+            y-&gt;rc()-&gt;p() = y;
+        }
+        transplant(z,y);
+        y-&gt;lc() = z-&gt;lc();
+        y-&gt;lc()-&gt;p() = y;
+        y-&gt;color() = z-&gt;color();
+    }
+    if(y_original_color == BLACK)
+    {
+        std::cout&lt;&lt;"delete_fixup "&lt;&lt;x-&gt;data()&lt;&lt;std::endl;
+        delete_fixup(x);
+    }
+
+}
+
+    template&lt;class T,class Node&gt;
+void BinTree&lt;T,Node&gt;::delete_fixup(Node* x)
+{
+    Node * w;
+    while( x != _root &amp;&amp; x-&gt;color() == BLACK)
+    {
+        if(x == x-&gt;p()-&gt;lc())
+        {
+            w = x-&gt;p()-&gt;rc();
+            if(w-&gt;color() == RED) // case 1
+            {
+                w-&gt;color() = BLACK;
+                x-&gt;p()-&gt;color() = BLACK;
+                left_rotate(x-&gt;p());
+                w = x-&gt;p()-&gt;rc();
+            }
+            if(w-&gt;lc()-&gt;color() == BLACK &amp;&amp; w-&gt;rc()-&gt;color() == BLACK)
+            {
+                w-&gt;color() = RED;
+                x = x-&gt;p();
+            }
+            else
+            {
+                if(w-&gt;rc()-&gt;color() == BLACK)
+                {
+                    w-&gt;lc()-&gt;color() = BLACK;
+                    w-&gt;color() = RED;
+                    right_rotate(w);
+                    w = x-&gt;p()-&gt;rc();
+                }
+                w-&gt;color() = x-&gt;p()-&gt;color();
+                x-&gt;p()-&gt;color()  = BLACK;
+                w-&gt;rc()-&gt;color() = BLACK;
+                left_rotate(x-&gt;p());
+                x = _root;
+            }
+        }
+        else
+        {
+            w = x-&gt;p()-&gt;lc();
+            if(w-&gt;color() == RED)
+            {
+                w-&gt;color() = BLACK;
+                x-&gt;p()-&gt;color() = RED;
+                right_rotate(x-&gt;p());
+                w = x-&gt;p()-&gt;lc();
+            }
+            if(w-&gt;lc()-&gt;color() == BLACK &amp;&amp; w-&gt;rc()-&gt;color() == BLACK)
+            {
+                w-&gt;color() = RED;
+                x = x-&gt;p();
+            }
+            else
+            {
+                if(w-&gt;lc()-&gt;color() == BLACK)
+                {
+                    w-&gt;rc()-&gt;color() = BLACK;
+                    w-&gt;color() = RED;
+                    left_rotate(w);
+                    w = x-&gt;p()-&gt;lc();
+                }
+                w-&gt;color() = x-&gt;p()-&gt;color();
+                x-&gt;p()-&gt;color() = BLACK;
+                w-&gt;lc()-&gt;color() = BLACK;
+                right_rotate(x-&gt;p());
+                x = _root;
+            }
+        }
+    }
+    x-&gt;color() =BLACK;
+}
+    template&lt;class T,class Node&gt;
+void BinTree&lt;T,Node&gt;::left_rotate(Node* x)
+{
+    Node* y = x-&gt;rc();
+    x-&gt;rc() = y-&gt;lc();
+    if(y-&gt;lc() != nil)
+    {
+        y-&gt;lc()-&gt;p() = x;
+    }
+    y-&gt;p() = x-&gt;p();
+    if(x-&gt;p() == nil)
+    {
+        _root = y;
+    }
+    else if (x == x-&gt;p()-&gt;lc())
+    {
+        x-&gt;p()-&gt;lc() = y;
+    }
+    else if(x == x-&gt;p()-&gt;rc())
+    {
+        x-&gt;p()-&gt;rc() = y;
+    }
+    y-&gt;lc() = x;
+    x-&gt;p() = y;
+}
+    template&lt;class T,class Node&gt;
+void BinTree&lt;T,Node&gt;::right_rotate(Node* y)
+
+{
+
+    Node* x = y-&gt;lc();
+    y-&gt;lc()  = x-&gt;rc();
+    if(x-&gt;rc() != nil)
+    {
+        x-&gt;rc()-&gt;p() = y;
+    }
+    x-&gt;p() = y-&gt;p();
+    if(y-&gt;p() == nil)
+    {
+        _root = x;
+    }
+    else if(y == y-&gt;p()-&gt;lc())
+    {
+        y-&gt;p()-&gt;lc() = x;
+    }
+    else if(y == y-&gt;p()-&gt;rc())
+    {
+        y-&gt;p()-&gt;rc() =x;
+    }
+    x -&gt;rc() = y;
+    y-&gt;p() = x;
+}
+    template&lt;class T,class Node&gt;
+void BinTree&lt;T,Node&gt;::insert_fixup(Node* z)
+{
+    Node* y;
+    while(z-&gt;p()-&gt;color() == RED)
+    {
+        if(z-&gt;p() == z-&gt;p()-&gt;p()-&gt;lc())
+        {
+            y = z-&gt;p()-&gt;p()-&gt;rc();
+            if (y-&gt;color() == RED)
+            {
+                z-&gt;p()-&gt;color() = BLACK;
+                y-&gt;color() = BLACK;
+                z-&gt;p()-&gt;p()-&gt;color() = RED;
+                z = z-&gt;p()-&gt;p();
+            }
+            else
+            {
+                if(z == z-&gt;p()-&gt;rc())
+                {
+                    z = z-&gt;p();
+                    left_rotate(z);
+                }
+                z-&gt;p()-&gt;color() = BLACK;
+                z-&gt;p()-&gt;p()-&gt;color() = RED;
+                right_rotate(z-&gt;p()-&gt;p());
+            }
+        }
+        else
+        {
+            //std::cout&lt;&lt;"case 2'"&lt;&lt;std::endl;
+            y = z-&gt;p()-&gt;p()-&gt;lc();
+            if (y -&gt;color() == RED)
+            {
+                z-&gt;p()-&gt;color() = BLACK;
+                y-&gt;color() = BLACK;
+                z-&gt;p()-&gt;p()-&gt;color() = RED;
+                z = z-&gt;p()-&gt;p();
+            }
+            else
+            {
+                if (z == z-&gt;p()-&gt;lc())
+                {
+                    z = z-&gt;p();
+                    right_rotate(z);
+                    //std::cout&lt;&lt;"right_rotate for case 2"&lt;&lt;std::endl;
+                    //bfs();
+                }
+                z-&gt;p()-&gt;color() = BLACK;
+                z-&gt;p()-&gt;p()-&gt;color() = RED;
+                left_rotate(z-&gt;p()-&gt;p());
+            }
+        }
+    }
+    _root-&gt;color() = BLACK;
+}
+
+    template&lt;class T,class Node&gt;
+void BinTree&lt;T,Node&gt;::insert(Node* node)
+{
+    Node* y = nil;
+    Node* x= _root;;
+    while (x != nil)
+    {
+        y = x;
+        if(node-&gt;data() &lt; x-&gt;data())
+        {
+            x = x-&gt;lc();
+        }
+        else
+        {
+            x = x-&gt;rc();
+        }
+    }
+    node-&gt;p() = y;
+    if (y == nil )
+    {
+        _root = node;
+    }
+    else if(node-&gt;data() &lt; y-&gt;data())
+    {
+        y-&gt;lc() = node;
+    }
+    else
+    {
+        y-&gt;rc() = node;
+    }
+    node-&gt;lc() = nil;
+    node-&gt;rc() = nil;
+    node-&gt;color() = RED;
+    //std::cout&lt;&lt;"before insert_fixup "&lt;&lt;std::endl;
+    //bfs();
+    //std::cout&lt;&lt;"==================="&lt;&lt;std::endl;
+    insert_fixup(node);
+}
+
+
+#endif
+
+</code></pre><pre><code>#ifndef __INTERVAL_TREE_H__
+#define __INTERVAL_TREE_H__ 1
+
+#include &lt;algorithm&gt;
+#include "redblacktree.h"
+
+// use low as BinNode key
+class IntervalNode
+{
+    public:
+
+        IntervalNode(int noop)
+            :_low(noop),_high(noop),_max(noop),_lc(NULL),_rc(NULL),_p(NULL)
+        {
+
+        }
+        IntervalNode(int low, int high)
+            :_low(low),_high(high),_max(high),_lc(NULL),_rc(NULL),_p(NULL)
+        {
+        }
+
+        IntervalNode*&amp; lc() {return _lc;}
+        IntervalNode*&amp; rc() {return _rc;}
+        IntervalNode*&amp; p() {return _p;}
+        int &amp; color() {return _color;}
+
+        int&amp; data() {return _low;}
+
+        int&amp; low() {return _low;}
+        int&amp; high() {return _high;}
+
+        int&amp; max() {return _max;}
+        bool overlap(IntervalNode* i)
+        {
+            return  _low &lt;= i-&gt;high() &amp;&amp; _high &gt;= i-&gt;low();
+        }
+    private:
+        int _low;
+
+        int _high;
+
+        int _max;
+
+        int _color;
+        IntervalNode* _lc;
+        IntervalNode* _rc;
+        IntervalNode* _p;
+};
+
+class IntervalTree:public BinTree&lt;int,IntervalNode&gt;
+{
+    public:
+        IntervalTree()
+        {
+        }
+    public:
+        static IntervalNode* make_node(int low, int high)
+        {
+            IntervalNode* node = new IntervalNode(low,high);
+            node-&gt;color() = RED;
+
+            node-&gt;lc() = nil;
+            node-&gt;rc() = nil;
+            node-&gt;p() = nil;
+
+            return node;
+ 
+        }
+    public:
+        IntervalNode* IntervalSearch(IntervalNode* i)
+        {
+           IntervalNode* x =this-&gt; _root; 
+           while( x != nil &amp;&amp; ! x-&gt;overlap(i))
+           {
+               if(x-&gt;lc() != nil &amp;&amp; x-&gt;lc()-&gt;max() &gt; i-&gt;low())
+               {
+                    x= x-&gt;lc();
+               }
+               else
+               {
+                   x = x-&gt;rc();
+               }
+                       
+           }
+           return x;
+        }
+    protected:
+        void left_rotate(IntervalNode* x) override
+        {
+            IntervalNode* y = x-&gt;rc();
+            IntervalNode* y_lc = y-&gt;lc();
+            IntervalNode* y_rc = x-&gt;rc();
+            BinTree&lt;int,IntervalNode&gt;::left_rotate(x);
+            int x_max = x-&gt;high();
+            if( x-&gt;lc() != nil)
+            {
+                x_max = std::max(x_max, x-&gt;lc()-&gt;max());
+            }
+            if ( y_lc != nil)
+            {
+                x_max = std::max(x_max, y_lc-&gt;max());
+            }
+            x-&gt;max() = x_max;
+
+            int y_max = y-&gt;high();
+            y_max = std::max(y_max,x_max);
+            if(y_rc != nil)
+            {
+                y_max = std::max(y_max,y_rc-&gt;max());
+            }
+            y_rc-&gt;max() = y_max;
+        }
+        void right_rotate(IntervalNode* y)  override
+        {
+            IntervalNode* x = y-&gt;lc();
+            IntervalNode* x_lc = x-&gt;lc();
+            IntervalNode* x_rc = x-&gt;rc();
+            BinTree&lt;int,IntervalNode&gt;::right_rotate(y);
+            int y_max = y-&gt;high();
+            if (x_rc != nil)
+            {
+                y_max = std::max(x_rc-&gt;max(),y_max);
+            }
+            if(y-&gt;rc() != nil)
+            {
+                y_max = std::max(y-&gt;rc()-&gt;max(),y_max);
+            }
+            y-&gt;max() = y_max;
+            int x_max = x-&gt;high();
+            x_max = std::max(x_max, y_max);
+            if(x_lc != nil)
+            {
+                x_max = std::max(x_lc-&gt;max(), x_max);
+            }
+            x-&gt;max() = x_max;
+        }
+};
+
+#endif 
+</code></pre><span class="meta"><time datetime="2020-01-05T00:00:00+08:00">January 5, 2020</time> &middot; </span> <!--<span class="meta"><time datetime="2020-01-05T00:00:00+08:00">January 5, 2020</time> &middot; </span> --></section></main></body></html>

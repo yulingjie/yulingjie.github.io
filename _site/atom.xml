@@ -1,0 +1,2465 @@
+<?xml version="1.0" encoding="utf-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+
+ <title>只砖片瓦</title>
+ <link href="http://localhost:4001/atom.xml" rel="self"/>
+ <link href="http://localhost:4001/"/>
+ <updated>2020-05-18T21:54:30+08:00</updated>
+ <id>http://localhost:4001</id>
+ <author>
+   <name></name>
+   <email>lingjiey@gmail.com</email>
+ </author>
+
+ 
+ <entry>
+   <title>C.Sereja and Brackets</title>
+   <link href="http://localhost:4001/2020/01/19/sereja-and-brackets"/>
+   <updated>2020-01-19T00:00:00+08:00</updated>
+   <id>http://localhost:4001/2020/01/19/Sereja_and_Brackets</id>
+   <content type="html">&lt;h2 id=&quot;本文章目的&quot;&gt;本文章目的&lt;/h2&gt;
+&lt;p&gt;趁热打铁，深入理解segment tree算法。参考文章&lt;a href=&quot;https://codeforces.com/blog/entry/15890&quot;&gt;链接&lt;/a&gt;。&lt;/p&gt;
+
+&lt;h2 id=&quot;问题描述&quot;&gt;问题描述&lt;/h2&gt;
+&lt;blockquote&gt;
+  &lt;p&gt;Sereja has a bracket sequence s1, s2, …, sn, or, in other words, a string s of length n, consisting of characters “(“ and “)”.&lt;/p&gt;
+
+  &lt;p&gt;Sereja needs to answer m queries, each of them is described by two integers li, ri (1 ≤ li ≤ ri ≤ n). The answer to the i-th query is the length of the maximum correct bracket subsequence of sequence sli, sli + 1, …, sri. Help Sereja answer all queries.&lt;/p&gt;
+
+  &lt;p&gt;You can find the definitions for a subsequence and a correct bracket sequence in the notes.&lt;/p&gt;
+
+  &lt;p&gt;Input
+The first line contains a sequence of characters s1, s2, …, sn (1 ≤ n ≤ 106) without any spaces. Each character is either a “(“ or a “)”. The second line contains integer m (1 ≤ m ≤ 105) — the number of queries. Each of the next m lines contains a pair of integers. The i-th line contains integers li, ri (1 ≤ li ≤ ri ≤ n) — the description of the i-th query.&lt;/p&gt;
+
+  &lt;p&gt;Output
+Print the answer to each question on a single line. Print the answers in the order they go in the input.&lt;/p&gt;
+&lt;/blockquote&gt;
+
+&lt;h2 id=&quot;解答&quot;&gt;解答&lt;/h2&gt;
+&lt;p&gt;首先，我们看下标准的segment tree函数:&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;void build(int id =1, int l =0, int r = n)
+{
+    if(r - l&amp;lt; 2)
+    {
+        s[id]= a[l];
+        return;
+    }
+    int mid = (l + r)/2;
+    build(id *2 , l ,mid);
+    build(id*2+1,mid,r);
+    s[id] = s[id *2] + s[id*2 +1];
+}
+int sum(int x, int y, int id=1, int l =0, int r=n)
+{
+    if(x &amp;gt;=r || l&amp;gt;=y) return 0;
+    if(x&amp;lt;=l &amp;amp;&amp;amp;  r &amp;lt;= y) return s[id];
+    int mid =(l + r)/2;
+    return sum(x,y,id*2,l, mid)
+    + sum(x,y,id*2+1,mid,r);
+}
+vector&amp;lt;s&amp;gt;;
+void split(int x, int y,int n)
+{
+    int l = x;
+    int r = y;
+    for(l +=n, r+=n ; l&amp;lt; r; l &amp;gt;&amp;gt;= 1, r &amp;gt;&amp;gt;= 1)
+    {
+        if(l&amp;amp;1) s.push_back(l++);
+        if(r&amp;amp;1) s.push_back(--r);
+    }
+}
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;我们通过完全二叉树储存区间，查询的时候，查询这个区间的最大子节点所储存的值。&lt;/p&gt;
+
+&lt;p&gt;这里同样，为了实现括号配对，我们对每个节点储存三种数据:&lt;/p&gt;
+&lt;ul&gt;
+  &lt;li&gt;t[x], x节点所有的配对的数目;&lt;/li&gt;
+  &lt;li&gt;o[x], x节点所代表的区间上，未配对的左括号数；&lt;/li&gt;
+  &lt;li&gt;c[x], x节点所代表的区间上,为配对的右括号数；&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;而每次合并子节点时：&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;tmp = min(o[2*x], c[2*x +1])
+t[x] = t[2*x] + t[2*x + 1] + tmp
+o[x] = o[2*x] + o[2*x +1] - tmp
+c[x] = c[2*x] + c[2*x + 1] - tmp
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;类似的，我们可以得出build函数：&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;void update(int id)
+{
+    int tmp = min(o[2*id], c[2*id +1]);
+    t[id] = t[2*id] + t[2*id + 1] + tmp;
+    o[id] = o[2*id] + o[2*id +1] - tmp;
+    c[id] = c[2*id] + c[2*id + 1] - tmp;
+}
+void build(int id = 1, int l = 0, int r = n)
+{
+    if(r - l &amp;lt; 2)
+    {
+        if(s[l] == '(')
+        {
+            o[l] = 1;
+        }
+        else
+        {
+            c[l] = 1;
+        }
+        return;
+    }
+    int mid = ( l + r) /2;
+    build(2 * id,l,mid);
+    build(2 * id +1,mid, r);
+    update(id);
+}
+
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;对应的查询函数：&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;typedef pair&amp;lt;int, int&amp;gt;pii;
+typedef pair&amp;lt;int,pii&amp;gt; node;
+node segment(int x, int y,int id=1, int l =0, int r = n)
+{
+    if( l&amp;gt;= y || x &amp;gt;= r) return node(0,pii(0,0));
+    if(x &amp;lt;= l &amp;amp;&amp;amp; r&amp;lt;= y)
+    {
+        return node(t[id], pii(o[id],c[id]));
+    }
+    int mid = (l + r)/2;
+    node a = segment(x, y, 2 * id, l, mid);
+    node b = segment(x,y,2*id + 1,mid,r);
+    int temp = min(a.y.x,b.y.y);
+    int T = a.x + b.x + temp;
+    int O = a.y.x + b.y.x - temp;
+    int C = a.y.y + b.y.y - temp;
+    return node(T,pii(O,C));
+}
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;完工。&lt;/p&gt;
+
+</content>
+ </entry>
+ 
+ <entry>
+   <title>segment tree</title>
+   <link href="http://localhost:4001/2020/01/16/segmenttree"/>
+   <updated>2020-01-16T00:00:00+08:00</updated>
+   <id>http://localhost:4001/2020/01/16/segmenttree</id>
+   <content type="html">&lt;h1 id=&quot;segment-tree&quot;&gt;segment tree&lt;/h1&gt;
+&lt;p&gt;本文的目的，归纳整理segment tree这个数据结构的使用。参考codeforces的&lt;a href=&quot;https://codeforces.com/blog/entry/15729&quot;&gt;链接
+1&lt;/a&gt;和&lt;a href=&quot;https://codeforces.com/blog/entry/18051&quot;&gt;链接2&lt;/a&gt;以及&lt;a href=&quot;https://codeforces.com/blog/entry/15890&quot;&gt;链接3&lt;/a&gt;。&lt;/p&gt;
+
+&lt;!--more--&gt;
+&lt;h2 id=&quot;基本结构&quot;&gt;基本结构&lt;/h2&gt;
+&lt;p&gt;先考虑2的k次幂,这个比较好理解。
+考虑数组[0,16)：
+&lt;a href=&quot;/assets/segmenttree/basic.png&quot;&gt;!operation 1&lt;/a&gt;
+这里使用完全二叉树来存数据，对任意一个节点[l,r)都有指向[l,(l+r)/2)和[(l+r)/2,r)的子节点。
+由于是使用数组储存完全二叉树的情况，对于序号为k的节点，其字节点指向序号为k&lt;em&gt;2和k&lt;/em&gt;2 +1的节点。&lt;/p&gt;
+
+&lt;h3 id=&quot;split&quot;&gt;split&lt;/h3&gt;
+&lt;p&gt;对任意一段区间[x,y)记为S，我们需要将这个区间分割到相应的节点上；比如说对于区间[3,10),我们应当将这个区间分割到节点19(3)、节点5([4,8))和节点12([8,10)).
+这样，我们做运算的时候，只需要动这三个节点就好了。&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;//递归版本
+vector&amp;lt;s&amp;gt;;
+void split(int x, int y, int id =1,int l =0, int r = n)
+{
+    if( x &amp;gt;= r or l&amp;gt;=y) return; // [l,r)与[x,y)不相交。
+    if(x &amp;lt;= l &amp;amp;&amp;amp; r &amp;lt;= y)
+    {
+        s.push_back(id);
+        return;
+    }
+    int mid = (l + r)/2;
+    split(x,y,id*2,l,mid);
+    split(x,y,id*2+1,mid,r);
+}
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;递归的代码比较容易理解。我们从树根开始开始二分遍历，只有节点所表示的区间落在[x,y)内部的时候，我们才会采纳这个节点，这个节点不需要进一步细分了。&lt;/p&gt;
+
+&lt;p&gt;运行时间：直接从示意图上考虑， 我们split区间[l,r)时，[l,r)覆盖的一定是图上高度越高的内部节点，加上不超过两个的叶子节点，那么显然，时间是O(lgn)的。&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;//迭代版本
+vector&amp;lt;s&amp;gt;;
+void split(int x, int y,int n)
+{
+    int l = x;
+    int r = y;
+    for(l +=n, r+=n ; l&amp;lt; r; l &amp;gt;&amp;gt;= 1, r &amp;gt;&amp;gt;= 1)
+    {
+        if(l&amp;amp;1) s.push_back(l++);
+        if(r&amp;amp;1) s.push_back(--r);
+    }
+}
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;迭代版本就难理解多了。迭代版本是自底向上的:
+    + 首先解析 &lt;code&gt;l+=n, r+=n&lt;/code&gt;这句，由于我们是使用数组储存的完全二叉树，那么叶子节点所在的序号即为l+n,r+n.
+    + 如果l是右子节点，那么l的父亲节点一定包含[x,y)之外的区间，我们应采纳l节点，同时l++;
+    + 如果r是右子节点，那么[x,y)区间应该落在r节点的左侧，此时我们应当采纳–r这个节点。&lt;/p&gt;
+
+&lt;p&gt;不管怎么说，这两个版本所要实现的功能是一致的。&lt;/p&gt;
+
+&lt;h3 id=&quot;build&quot;&gt;build&lt;/h3&gt;
+&lt;pre&gt;&lt;code&gt;//递归版本
+void build(int id =1, int l =0, int r = n)
+{
+    if(r - l&amp;lt; 2)
+    {
+        s[id]= a[l];
+        return;
+    }
+    int mid = (l + r)/2;
+    build(id *2 , l ,mid);
+    build(id*2+1,mid,r);
+    s[id] = s[id *2] + s[id*2 +1];
+}
+&lt;/code&gt;&lt;/pre&gt;
+&lt;pre&gt;&lt;code&gt;// 迭代版本
+void build()
+{
+    // 预先在t[n,2n)间存储了叶节点数据。
+    for(int i =0; i&amp;lt; n; ++i) scanf(&quot;%d&quot;, t + n + i);
+
+    for(int i = n-1; i&amp;gt;0; --i)
+    {
+        t[i] = t[i&amp;lt;&amp;lt;1] + t[i&amp;lt;&amp;lt;1|1];    
+    }
+}
+
+&lt;/code&gt;&lt;/pre&gt;
+&lt;h3 id=&quot;modify&quot;&gt;modify&lt;/h3&gt;
+&lt;pre&gt;&lt;code&gt;// 递归版本
+void modify(int p,int x, int id =1,int l =0, int r= n)
+{
+    s[id] += x - a[p];
+    if(r - l&amp;lt; 2)
+    {
+        a[p] = x;
+        return;
+    }
+    int mid = (l + r)/2;
+    if( p&amp;lt; mid)
+    {
+        modify(p,x,id*2,l,mid);
+    }
+    else
+    {
+        modify(p,x,id*2 +1,mid, r);
+    }
+}
+&lt;/code&gt;&lt;/pre&gt;
+&lt;pre&gt;&lt;code&gt;// 迭代版本
+void modify(int p, int value)
+{
+    for(t[p +=n] = value; p&amp;gt; 1;p&amp;gt;&amp;gt;=1) t[p&amp;gt;&amp;gt;1] = t[p] + t[p^1];
+}
+&lt;/code&gt;&lt;/pre&gt;
+&lt;h3 id=&quot;sum&quot;&gt;sum&lt;/h3&gt;
+&lt;pre&gt;&lt;code&gt;// 递归
+int sum(int x, int y, int id=1, int l =0, int r=n)
+{
+    if(x &amp;gt;=r || l&amp;gt;=y) return 0;
+    if(x&amp;lt;=l &amp;amp;&amp;amp;  r &amp;lt;= y) return s[id];
+    int mid =(l + r)/2;
+    return sum(x,y,id*2,l, mid)
+    + sum(x,y,id*2+1,mid,r);
+}
+
+// 迭代
+int sum(int l, int r)
+{
+    int res = 0;
+    for(l +=n, r+=n; l&amp;lt; r; l &amp;gt;&amp;gt;= 1 , r&amp;gt;&amp;gt;=1)
+    {
+        if(l&amp;amp;1) res += t[l++];
+        if(r&amp;amp;1) res += t[--r];
+    }
+    return res;
+}
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;h3 id=&quot;lazy-propagation&quot;&gt;lazy propagation&lt;/h3&gt;
+&lt;p&gt;延迟更新，只在合适的时候才去更新数据。
+比如说，我们需要将[l,r)这个区间段内的数据统统加x,我们不用逐个将每个数据加x，而是使用一个额外数组记录，在需要的时候，再加上:&lt;/p&gt;
+
+&lt;p&gt;直接看原版代码不太好理解，这里做个简单的推导。&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;// 对于节点id,区间为[l,r)的所有数据加x
+// s[id]我们仍然储存这个区间的和，但同时，我们使用lazy[id]来储存需要变更的数据x，但是具体的区间上我们并不去做更新
+// 事实上，更新x目前止于节点id.
+void upd(int id,int l,int r,int x)
+{
+    lazy[id] += x;
+    //s[id] += (r-l) * x;
+}
+void shift(int id, int l, int r)
+{
+    int mid = (l + r)/2;
+    upd(id*2,l ,mid, lazy[id]);
+    upd(id*2+1,mid, r, lazy[id]);
+    lazy[id] = 0;
+}
+// 这里把计算sum的步骤分离出来了
+// 更新区间数据时，我们只更新对应节点的数据
+void increase(int x, int y,int v, int id =1,int l = 0,int r = n)
+{
+    if(x &amp;gt;= r or l &amp;gt;= y) return;
+    if(x &amp;lt;= l &amp;amp;&amp;amp; r &amp;lt;= y)
+    {
+        upd(id, l,r,v); // 同split一样，当节点的区间[l,r)在[x,y)之间时，我们停止向下更新节点数据了
+        return; 
+    }
+    // shift(id, l,r); //这里稍微改动下
+    int mid = (l + r)/2;
+    increase(x, y, v, id*2,l,mid);
+    increase(x,y,v,id*2 +1,mid,r);
+    //s[id] = s[id*2] + s[id*2+1] ; //更新sum数据
+
+}
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;在increase时我们标记了一些列需要更新数据的节点，但此时，如果我们直接取s[id]的话，是错误的。
+考虑此时我们需要调用sum对区间[x,y)进行求值，首先，我们希望，在求值的时候，如果有碰到lazy[id]不为0的节点的话，我们能将这个节点的sum更新了,当然，这个节点的父节点也同样要更新。&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;// 初次尝试
+int sum(int x, int y,int id= 1, int l =0, int r = n)
+{
+    if(x &amp;gt;= r || l&amp;gt;=y) return 0;
+    if(x &amp;lt;=l &amp;amp;&amp;amp; r &amp;lt;=y) 
+    {
+        s[id] += (lazy[id]* (r-l));
+        //lazy[id] = 0; 此时节点id的sum值虽然更新了，但是我们并没真的更新每个叶节点，所以我们必须留着lazy[id]
+        return s[id];
+    }
+    int mid = (l + r)/2;
+    return sum(x,y,id*2, l,mid) +
+        sum(x,y,id*2 +1 ,mid ,r);
+}
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;可以看到，第一次sum的时候我们成功更新了s[id]的数据，但下次查询之前，lazy[id]必须要清除为0。这意味着，如果某个节点id标记了lazy[id],那么在第一次访问这个节点的s[id]时，我们要同时将s[id]更新到正确的值并且将lazy[id]清除为0.
+我们对任意一节点分析下lazy[id]的情况：&lt;/p&gt;
+&lt;ul&gt;
+  &lt;li&gt;如果这个节点时叶节点，清楚lazy数据即可；&lt;/li&gt;
+  &lt;li&gt;如果这个节点是某个内部节点的话，记得我们设置lazy的方法，是从根节点往下设置的，那么，我们必须同时去设置这个节点的子节点，即id&lt;em&gt;2 与 id&lt;/em&gt;2 +1这两个节点。&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;pre&gt;&lt;code&gt;// 第二版
+//在更新sum时，我们同时清楚lazy数据
+int sum(int x, int y, int id=1, int l = 0, int r = n)
+{
+    if(x &amp;gt;= r|| l &amp;gt;= y) return 0;
+    if( x &amp;lt;= l &amp;amp;&amp;amp; r &amp;lt;= y)
+    {
+        s[id] += (lazy[id] * (r-l));
+        shift(id,l,r);
+        return s[id];
+    }
+    int mid = (l + r)/2;
+    return sum(x,y,id*2, l,mid) + sum(x,y,id*2 +1,mid,r);
+}
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;这样，sum数据的确更新成功，lazy数据也传导到子节点了，但是，我们发现，递归调用的中间路径上，遇到的内部节点的lazy[id]并没用做任何操作，而且，就我们设置lazy的方法来说，我们设置节点的子节点并没有设置lazy数据，换句话说，我们计算sum时，极有可能某个节点明明其父亲节点已经设置过了lazy了，但是由于我们并没有让lazy数据propagate down，在这个子节点上的sum数据获取是错误的。&lt;/p&gt;
+
+&lt;p&gt;再回到我们第二版的sum函数，我们是自顶向下进行split的，这意味着，我们可以将lazy数据自上向下传播开来。&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;// 我们需要一个只传播lazy数据，但是不重设lazy数据的函数
+void shiftnoreset(int id, int l, int r)
+{
+    int mid = (l + r)/2;
+    upd(id*2,l ,mid, lazy[id]);
+    upd(id*2+1,mid, r, lazy[id]);
+    //lazy[id] = 0;
+}
+
+// 第三版，在sum时，我们自顶向下的将lazy数据传播开来
+int sum(int x,int y ,int id = 1,int l =0 ,int r = n)
+{
+    if(x &amp;gt;= r ||  l &amp;gt;= y) return 0;
+    if( x &amp;lt;= l &amp;amp;&amp;amp; r &amp;lt;= y)
+    {
+        s[id] += (lazy[id] * (r-l));//只在这里清除了lazy
+        shift(id,l,r);
+        return s[id];
+    }
+    shiftnoreset(id,l,r);
+    int mid = (l + r)/2;
+    return sum(x,y,id*2, l,mid) + sum(x,y,id*2 +1,mid,r);
+}
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;第三版，虽然我们将lazy数据传播开来了，但是，我们只在最终节点处清楚了lazy数据，对于路径上的其它内部节点，下次再次访问的时候，必然会出现lazy的重复计算的问题。&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;// 第四版，我们将lazy数据传播开来后，计算sum值，更新sum[id],那么此时的lazy[id]就不再有用了，可以方心清零了。
+int sum(int x, int y, int id=1, int l =0, int r = n)
+{
+    if(x &amp;gt;= r|| l &amp;gt;= y) return 0;
+    if(x &amp;lt;= l &amp;amp;&amp;amp; r &amp;lt;= y)
+    {
+        s[id] += (lazy[id] * (r-1));
+        shift(id,l,r);
+        return s[id];
+    }
+    shift(id,l,r);// 我们传播开来lazy后就直接清零了
+    int mid = (l + r)/2;
+
+    s[id] =  sum(x,y,id*2, l,mid) + sum(x,y,id*2 +1,mid,r);
+    return s[id];
+}
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;现在我们来研究下原版的代码：&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;void upd(int id, int l, int r, int x)
+{
+    lazy[id] += x;
+    s[id] += (r - l) *x;
+}   
+void shift(int id,int l, int r)
+{
+    int mid = (l + r)/2;
+    upd(id *2 , l ,mid,lazy[id]);
+    upd(id*2+1,id, r, lazy[id]);
+    lazy[id] = 0;
+}
+void increase(int x,int y,int v, int id=1,int l =0, int r =n)
+{
+    if(x &amp;gt;= r|| l &amp;gt;= y) return;
+    if(x&amp;lt;= l || r &amp;lt;= y) 
+    {
+        upd(id, l,r, v);
+        return ;
+    }
+    shift(id ,l ,r);
+    int mid = (l + r)/2;
+    increase(x, y, v, id*2 l ,mid);
+    increase(x, y ,v, id*2 +1, mid,r);
+    s[id] = s[id*2] + s[id*2+1];
+}
+int sum(int x,int y, int id = 1, int l = 0,  int r = n)
+{
+    if(x &amp;gt;= r || l &amp;gt;= y) return 0;
+    if(x&amp;lt;= l &amp;amp;&amp;amp; r &amp;lt;=y ) return s[id];
+    shift(id,l,r);
+    int mid = (l+r)/2;
+    return sum(x, y, id*2, l ,mid) + sum(x, y,id*2 +1, mid,r);
+}
+
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;这里使用下图的结构，选择更新[0,8)这个区间+1,来研究下,不妨设原来的所有数据都是0。
+&lt;a href=&quot;/assets/segmenttree/basic.png&quot;&gt;!operation 2&lt;/a&gt;&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;从根节点[0,16)入手，更新lazy[1]到节点2与节点3。此时lazy[1] =0,所以没有任何变化；&lt;/li&gt;
+  &lt;li&gt;进入左侧子节点[0,8),我们此时进入终止逻辑，更新节点2的lazy数据，lazy[2] = 1,更新sum值，s[2] += (8 - 0) * 1 ;&lt;/li&gt;
+  &lt;li&gt;右侧的不做任何更新，循环停止。&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;我们可以看到，此时，除了终止节点，所有路径上的内部节点均更新过了sum值，且lazy数据均为0。
+对于终止节点和终止节点之下的节点数据，在没有访问到时，我们可以放心的不管它，而在访问到时，我们进入sum函数逻辑。&lt;/p&gt;
+
+&lt;p&gt;假设我们需要求sum(2,3)的值。&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;我们从节点2开始lazy数据一路向下传播，更新节点4与5，5不向下传播了；&lt;/li&gt;
+  &lt;li&gt;节点4继续，更新节点8与节点9，8不继续向下传播了；&lt;/li&gt;
+  &lt;li&gt;节点9注意到，直接返回s[id]了。这几个节点的sum数据在lazy传播过来的同时就更新了，所以这个数据时正确的。&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;于是，我们得到正确的答案。&lt;/p&gt;
+
+</content>
+ </entry>
+ 
+ <entry>
+   <title>Particle System rendered on Unity RT Image</title>
+   <link href="http://localhost:4001/2020/01/12/rtt-particle"/>
+   <updated>2020-01-12T00:00:00+08:00</updated>
+   <id>http://localhost:4001/2020/01/12/RTT_Particle</id>
+   <content type="html">&lt;h1 id=&quot;粒子效果在rt上的显示&quot;&gt;粒子效果在RT上的显示&lt;/h1&gt;
+
+&lt;p&gt;本文目的: 对于项目中遇到的的在RT上显示特效的问题进行总结。&lt;/p&gt;
+
+&lt;!--more--&gt;
+
+&lt;h2 id=&quot;综述&quot;&gt;综述&lt;/h2&gt;
+
+&lt;p&gt;项目最近需要在组队页面添加个星盘系统，所谓星盘，就是一大堆特效悬浮在人的周围。由于组队页面一直采用的是RT的方法进行显示，使用特效后，会出现局部黑片，效果非常差。这里探索下对应的处理方案。&lt;/p&gt;
+
+&lt;p&gt;由于本篇文章总结的性质，这里把问题单独提出来研究。&lt;/p&gt;
+
+&lt;p&gt;特效效果&lt;img src=&quot;/assets/unity_rtt/2020_01_12_20_03.14.bmp&quot; alt=&quot;operation 1&quot; /&gt;。&lt;/p&gt;
+
+&lt;p&gt;问题特效的结构&lt;img src=&quot;/assets/unity_rtt/2020_01_12_20_20.35.bmp&quot; alt=&quot;operation 2&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;可以看到，对应的粒子的底图是黑色的。&lt;/p&gt;
+
+&lt;p&gt;现在先禁用其它的特效，只留下单独的&lt;em&gt;lizi_1001&lt;/em&gt;，我们可以看到单独的一个粒子的效果&lt;img src=&quot;/assets/unity_rtt/2020_01_12_20_34.42.bmp&quot; alt=&quot;operation 3&quot; /&gt;，当然这个效果是不正确的，我们需要对此 做出一些探究。&lt;/p&gt;
+
+&lt;h2 id=&quot;shader&quot;&gt;Shader&lt;/h2&gt;
+
+&lt;p&gt;我们先来看下这个粒子效果的材质&lt;img src=&quot;/assets/unity_rtt/2020_01_12_20_37.27.bmp&quot; alt=&quot;operation 4&quot; /&gt;。&lt;/p&gt;
+
+&lt;p&gt;这个粒子效果是由两个材质构成的，其中&lt;em&gt;glow_2009&lt;/em&gt;对应着粒子图片的显示，而&lt;em&gt;huahen_0001_a_01&lt;/em&gt;则对应着拖尾效果。我们主要看下在粒子图片的显示上。&lt;/p&gt;
+
+&lt;p&gt;&lt;em&gt;glow_2009&lt;/em&gt;使用了AddParticles的Shander：&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&quot;language-glsl&quot;&gt;// Upgrade NOTE: replaced 'mul(UNITY_MATRIX_MVP,*)' with 'UnityObjectToClipPos(*)'
+
+Shader &quot;Artist/Effect/Add Particles&quot; {
+Properties {
+	_Brightness (&quot;Brightness&quot;, Float) = 1.0
+	_TintColor (&quot;Tint Color&quot;, Color) = (0.5,0.5,0.5,0.5)
+	_MainTex (&quot;Particle Texture&quot;, 2D) = &quot;white&quot; {}
+	//_InvFade (&quot;Soft Particles Factor&quot;, Range(0.01,3.0)) = 1.0
+}
+
+Category {
+	Tags { &quot;Queue&quot;=&quot;Transparent&quot; &quot;IgnoreProjector&quot;=&quot;True&quot; &quot;RenderType&quot;=&quot;Transparent&quot; }
+	
+	Blend SrcAlpha One
+	AlphaTest Greater .01
+	ColorMask RGBA
+	Cull Off Lighting Off ZWrite Off Fog { Color (0,0,0,0) }
+	BindChannels {
+		Bind &quot;Color&quot;, color
+		Bind &quot;Vertex&quot;, vertex
+		Bind &quot;TexCoord&quot;, texcoord
+	}
+	
+	// ---- Fragment program cards
+	SubShader {
+		LOD 150
+		Pass {
+		
+			CGPROGRAM
+			#pragma vertex vert
+			#pragma fragment frag
+			//#pragma fragmentoption ARB_precision_hint_fastest
+			//#pragma multi_compile_particles
+
+			#include &quot;UnityCG.cginc&quot;
+
+			sampler2D _MainTex;
+			fixed4 _TintColor;
+			float _Brightness;
+			
+			struct appdata_t {
+				float4 vertex : POSITION;
+				fixed4 color : COLOR;
+				float2 texcoord : TEXCOORD0;
+			};
+
+			struct v2f {
+				float4 vertex : POSITION;
+				fixed4 color : COLOR;
+				float2 texcoord : TEXCOORD0;
+				/*#ifdef SOFTPARTICLES_ON
+				float4 projPos : TEXCOORD1;
+				#endif*/
+			};
+			
+			float4 _MainTex_ST;
+
+			v2f vert (appdata_t v)
+			{
+				v2f o;
+				o.vertex = UnityObjectToClipPos(v.vertex);
+				/*#ifdef SOFTPARTICLES_ON
+				o.projPos = ComputeScreenPos (o.vertex);
+				COMPUTE_EYEDEPTH(o.projPos.z);
+				#endif*/
+				o.color = v.color;
+				o.texcoord = TRANSFORM_TEX(v.texcoord,_MainTex);
+				return o;
+			}
+
+			//sampler2D _CameraDepthTexture;
+			//float _InvFade;
+			
+			fixed4 frag (v2f i) : COLOR
+			{
+				/*#ifdef SOFTPARTICLES_ON
+				float sceneZ = LinearEyeDepth (UNITY_SAMPLE_DEPTH(tex2Dproj(_CameraDepthTexture, UNITY_PROJ_COORD(i.projPos))));
+				float partZ = i.projPos.z;
+				float fade = saturate (_InvFade * (sceneZ-partZ));
+				i.color.a *= fade;
+				#endif*/
+				
+				i.color.rgb *= _Brightness;
+				return 2.0f * i.color * _TintColor * tex2D(_MainTex, i.texcoord);
+			}
+			ENDCG 
+		}
+	} 	
+	
+	// ---- Dual texture cards
+	/*SubShader {
+		Pass {
+			SetTexture [_MainTex] {
+				constantColor [_TintColor]
+				combine constant * primary
+			}
+			SetTexture [_MainTex] {
+				combine texture * previous DOUBLE
+			}
+		}
+	}
+	
+	// ---- Single texture cards (does not do color tint)
+	SubShader {
+		Pass {
+			SetTexture [_MainTex] {
+				combine texture * primary
+			}
+		}
+	}*/
+}
+}
+
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Shader比较简单，这里做个简要的说明：&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;
+    &lt;p&gt;这个Shader使用来显示&lt;code&gt;Transparent&lt;/code&gt;的物体的，并采用的混合模式&lt;code&gt;Blend SrcAlpha One&lt;/code&gt;，这个混合模式正好是&lt;em&gt;Add Particles&lt;/em&gt;，即在原有的颜色的基础上加上当前的颜色。&lt;/p&gt;
+  &lt;/li&gt;
+  &lt;li&gt;
+    &lt;p&gt;&lt;code&gt;ColorMask RGBA&lt;/code&gt;，这表示当前的Shader输出颜色和透明度。&lt;/p&gt;
+  &lt;/li&gt;
+  &lt;li&gt;
+    &lt;p&gt;&lt;code&gt;BindChannels&lt;/code&gt;这个是Legacy的语法了，这里不起作用。&lt;/p&gt;
+  &lt;/li&gt;
+  &lt;li&gt;
+    &lt;p&gt;这个Shader只有一个通道，顶点对应着&lt;code&gt;vert&lt;/code&gt;，着色对应着&lt;code&gt;frag&lt;/code&gt;。&lt;/p&gt;
+  &lt;/li&gt;
+  &lt;li&gt;
+    &lt;p&gt;顶点函数基本上只是转了下位置坐标空间，&lt;code&gt;UnityObjectToClipPos&lt;/code&gt;，并且拿了下uv的位置&lt;code&gt;o.texcoord = TRANSFORM_TEX(v.texcoord,_MainTex)&lt;/code&gt;。&lt;/p&gt;
+
+    &lt;ul&gt;
+      &lt;li&gt;
+        &lt;p&gt;&lt;code&gt;TRANSFORM_TEX&lt;/code&gt;这个函数单独说下，这是Unity定义的一个宏，定义为&lt;/p&gt;
+
+        &lt;pre&gt;&lt;code class=&quot;language-glsl&quot;&gt;// Transforms 2D UV by scale/bias property
+#define TRANSFORM_TEX(tex,name) (tex.xy * name##_ST.xy + name##_ST.zw)
+&lt;/code&gt;&lt;/pre&gt;
+      &lt;/li&gt;
+    &lt;/ul&gt;
+  &lt;/li&gt;
+  &lt;li&gt;
+    &lt;p&gt;fragment函数这里也只是做了个简单的颜色计算，附上了_Brightness这个属性。&lt;/p&gt;
+  &lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;从Shader这里我们可以看到，这个粒子效果是输出了Alpha值的，但是我们截下RT的alpha看下：&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;/assets/unity_rtt/2020_01_12_21_11.28.bmp&quot; alt=&quot;operation 5&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;可以看到，&lt;/p&gt;
+
+&lt;p&gt;对应的位置的Alpha为全白的，即这里我们输出的Alpha值为1。那么自然，用这张图的UI图片在这个位置输出的是黑块了。&lt;/p&gt;
+
+&lt;h2 id=&quot;实验-关闭alpha通道的输出&quot;&gt;实验 关闭Alpha通道的输出&lt;/h2&gt;
+
+&lt;p&gt;当我们关闭Alpha通道的输出时，&lt;code&gt;ColorMask RGB&lt;/code&gt;，此时粒子效果干脆都不显示了。&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;/assets/unity_rtt/2020_01_12_21_24.07.bmp&quot; alt=&quot;operation 6&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;这里应该是因为，Alpha通道没有输出，默认直接设置为0了，经过RT这里直接就是不显示了。&lt;/p&gt;
+
+&lt;h2 id=&quot;问题定位&quot;&gt;问题定位&lt;/h2&gt;
+
+&lt;p&gt;现在问题就比较好理解了。黑块对应的位置的Alpha值为1。但从Shader来看，我们是输出了Alpha值的，那只有可能是图片问题了。&lt;/p&gt;
+
+&lt;p&gt;我们定位到图片：&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;/assets/unity_rtt/2020_01_12_21_28.12.bmp&quot; alt=&quot;operation 7&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;可以看到，这张图片是带Alpha通道的，我们看下Alpha通道的值：&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;/assets/unity_rtt/2020_01_12_21_30.55.bmp&quot; alt=&quot;operation 8&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;那么这个问题是美术的资源制作问题了，通知美术改下就好了。&lt;/p&gt;
+
+</content>
+ </entry>
+ 
+ <entry>
+   <title>interval trees</title>
+   <link href="http://localhost:4001/2020/01/05/intervaltree"/>
+   <updated>2020-01-05T00:00:00+08:00</updated>
+   <id>http://localhost:4001/2020/01/05/intervaltree</id>
+   <content type="html">&lt;h2 id=&quot;本文目的-研究interval-trees来加深对红黑树的理解&quot;&gt;本文目的： 研究interval trees来加深对红黑树的理解。&lt;/h2&gt;
+
+&lt;!--more--&gt;
+&lt;h3 id=&quot;augment-tree&quot;&gt;Augment Tree&lt;/h3&gt;
+&lt;p&gt;通过对已有的数据结构附加额外的属性，达到实现额外功能的目的。
+附加的额外属性要保证原数据结构的增删改查的时间复杂度不会有渐进意义上的增加。&lt;/p&gt;
+
+&lt;h2 id=&quot;interval-trees&quot;&gt;Interval Trees&lt;/h2&gt;
+&lt;p&gt;通过对红黑树附加额外的数据，我们要来实现对不同intervals 的组织。&lt;/p&gt;
+
+&lt;p&gt;我们将每个interval看作一个节点x,节点x中含有额外的数据，x.int.low和x.int.high表示这个interval的区间，
+所有节点按照x.int.low作为key来组织。同时含有属性x.max,表示以x为根节点的子树上所有节点的high的最大值,即&lt;code&gt;x.max = max(x.int.high,x.left.max,x.right.max)&lt;/code&gt;。&lt;/p&gt;
+
+&lt;p&gt;我们先证明对于这棵树的delete和insert操作时间仍然时O(lgn)的。&lt;/p&gt;
+
+&lt;p&gt;Proof:&lt;/p&gt;
+&lt;ul&gt;
+  &lt;li&gt;向interval tree中插入一个节点分为两步：1. 将节点x插入到合适的位置；2. 如果插入的节点不满足红黑树的属性，我们需要做fixup。
+由于插入节点x及其所有祖先节点的max均有可能发生改变，我们需要更新O(lgn)个节点的属性值;对于需要旋转的节点，我们至多只需要做两次旋转，每次旋转只会动两个节点。我们最终只需要动O(lgn)个节点的属性。&lt;/li&gt;
+  &lt;li&gt;向interval tree中删除一个节点同样可以分为两步：1.删除指定节点，将后继节点移动到被删除的节点的位置；2. 后继节点可能发生不满足红黑树属性的情况，需要做fixup.我们知道删除操作最多只会发生3次旋转，于是我们更新属性的时间最多仍然是O(lgn).&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;h2 id=&quot;查询&quot;&gt;查询&lt;/h2&gt;
+
+&lt;pre&gt;&lt;code&gt;INTERVAL-SEARCH(T,i)
+    x = T.root
+    while x != T.nil and i does not overlap x.int
+        if x.left != T.nil and x.left.max &amp;gt;= i.low
+            x = x.left
+        else x = x.right
+    return x
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Proof:&lt;/p&gt;
+
+&lt;p&gt;考察循环的不变性：
+如果T有和interval i相交的interval，那么这个interval必然位于以x为根节点的子树上。&lt;/p&gt;
+
+&lt;p&gt;Initialization:&lt;/p&gt;
+
+&lt;p&gt;初始化时，x作为根节点，一定可以保证假设的正确。&lt;/p&gt;
+
+&lt;p&gt;Maintenance:&lt;/p&gt;
+&lt;ul&gt;
+  &lt;li&gt;如果当前节点x与i相交，循环终止。&lt;/li&gt;
+  &lt;li&gt;如果循环进入x的右子树，说明此时x的左子树为空或者左子树的max &amp;lt; i.low. 这两种情况均保证左子树不含与i相交的interval。&lt;/li&gt;
+  &lt;li&gt;如果循环进入x的左子树，此时，必然有x.left.max &amp;gt;= i.low。此时可以分为两种情况:
+    &lt;ul&gt;
+      &lt;li&gt;如果左子树中不含和i相交的interval。那么此时必然有,对任何左子树中满足i’.high &amp;gt;= i.low的节点必然i.high &amp;lt; i’.low。又由于我们树是按照interval.low进行组织的，这意味着i.high &amp;lt; 所有右侧子树节点的int.low.&lt;/li&gt;
+      &lt;li&gt;如果左子树中含和i相交的interval。此时假设满足，进入左子树继续处理。&lt;/li&gt;
+    &lt;/ul&gt;
+  &lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;Termination:&lt;/p&gt;
+
+&lt;p&gt;如果循环终止于T.nil,由以上推导，可知，T中不含和i相交的节点。或者循环终止与找到某个节点x与i相交。&lt;/p&gt;
+
+&lt;h2 id=&quot;代码实现&quot;&gt;代码实现&lt;/h2&gt;
+&lt;p&gt;这里借用了红黑树的结构，同时对红黑树做了一些重构。&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;#ifndef __RED_BLACK_TREE_H__
+#define __RED_BLACK_TREE_H__ 1
+#include &amp;lt;iostream&amp;gt;
+#include &amp;lt;queue&amp;gt;
+
+const int RED = 0;
+const int BLACK = 1;
+const int BLACK_BLACK= 3;
+const int BLACK_RED = 4;
+template&amp;lt;class T&amp;gt;
+class BinNode
+{
+    public:
+        BinNode (const T&amp;amp; data)
+            :_data(data)
+        {
+            _color = BLACK;
+            _lc = NULL;
+            _rc = NULL;
+            _p = NULL;
+        }
+        virtual ~BinNode (){}
+
+        int &amp;amp; color() {return _color;}
+        BinNode*&amp;amp; lc(){return _lc;}
+        BinNode*&amp;amp; rc(){return _rc;}
+        BinNode*&amp;amp; p(){return _p;}
+
+        T&amp;amp; data(){return _data;}
+
+    private:
+    private:
+        /* data */
+        int _color;
+        BinNode* _lc;
+        BinNode* _rc;
+        BinNode* _p;
+        T _data;
+};
+
+template&amp;lt;class T,class Node&amp;gt;
+class BinTree
+{
+    public:
+class BinNode
+{
+    public:
+        BinNode (const Node&amp;amp; data)
+            :_data(data)
+        {
+            _color = BLACK;
+            _lc = NULL;
+            _rc = NULL;
+            _p = NULL;
+        }
+        virtual ~BinNode (){}
+
+        int &amp;amp; color() {return _color;}
+        Node*&amp;amp; lc(){return _lc;}
+        Node*&amp;amp; rc(){return _rc;}
+        Node*&amp;amp; p(){return _p;}
+
+        T&amp;amp; data(){return _data;}
+
+    private:
+    private:
+        /* data */
+        int _color;
+        BinNode* _lc;
+        BinNode* _rc;
+        BinNode* _p;
+        T _data;
+};
+
+
+    public:
+
+        static Node* nil;
+    public:
+        BinTree()
+        {
+            _root = nil;
+        }
+        void insert(Node* node);
+        Node* search(const T &amp;amp; t) const;
+
+        void deletenode(Node* z);
+        void dfs();
+        void bfs();
+        Node* root(){return _root;}
+        void LeftRotate(Node* x) {left_rotate(x);}
+        void RightRotate(Node* x){right_rotate(x);}
+    protected:
+        virtual void left_rotate(Node* x);
+
+        virtual void right_rotate(Node* x);
+    private:
+        Node* search_recur(Node* node, const T&amp;amp; t) const;
+        void insert_fixup(Node* node);
+        void transplant(Node* u, Node* v);
+        Node* minimum(Node* node);
+
+        void delete_fixup(Node* x);
+
+        void dfs_recur(Node* node);
+
+    protected:
+        Node* _root;
+    public:
+        static Node* make_node(const T&amp;amp; t)
+        {
+            Node* node = new Node(t);
+            node-&amp;gt;color() = RED;
+
+            node-&amp;gt;lc() = nil;
+            node-&amp;gt;rc() = nil;
+            node-&amp;gt;p() = nil;
+
+            return node;
+        }
+
+};
+
+
+template&amp;lt;class T&amp;gt;
+class RedBlackTree:public BinTree&amp;lt;T,BinNode&amp;lt;T&amp;gt;&amp;gt;
+{
+};
+
+template&amp;lt;class T,class Node&amp;gt;
+Node* BinTree&amp;lt;T,Node&amp;gt;::nil = new Node(-1);
+
+template&amp;lt;class T,class Node&amp;gt;
+Node* BinTree&amp;lt;T,Node&amp;gt;::search(const T&amp;amp; t) const
+{
+    return search_recur(_root, t);
+}
+template&amp;lt;class T,class Node&amp;gt;
+Node* BinTree&amp;lt;T,Node&amp;gt;::search_recur(Node* node, const T&amp;amp; t) const
+{
+    if(node == nil) return nil;
+    if(node-&amp;gt;data() == t) return node;
+    if(node-&amp;gt;data() &amp;lt; t)
+    {
+        return search_recur(node-&amp;gt;rc(),t);
+    }
+    if (node-&amp;gt;data() &amp;gt; t)
+    {
+        return search_recur(node-&amp;gt;lc(),t);
+    }
+    return nil;
+
+}
+    template&amp;lt;class T,class Node&amp;gt;
+void BinTree&amp;lt;T,Node&amp;gt;::dfs()
+{
+    dfs_recur(_root);
+}
+static const char* getColor(int color)
+{
+    if (color == RED)
+    {
+        return &quot;red&quot;;
+    }
+    else if(color == BLACK)
+    {
+        return &quot;black&quot;;
+    }
+    else if(color == BLACK_BLACK)
+    {
+        return &quot;black_black&quot;;
+    }
+    else if(color == BLACK_RED)
+    {
+        return &quot;black_red&quot;;
+    }
+    return &quot;&quot;;
+}
+    template &amp;lt;class T,class Node&amp;gt;
+void BinTree&amp;lt;T,Node&amp;gt;::bfs()
+{
+    if (_root == nil) return;
+    std::queue&amp;lt;Node* &amp;gt; q;
+    q.push(_root);
+    int cur = 1;
+    int next =0;
+    while(q.size() &amp;gt; 0)
+    {
+        Node* node = q.front();
+
+        q.pop();
+        std::cout&amp;lt;&amp;lt;node-&amp;gt;data() &amp;lt;&amp;lt; &quot; &quot;&amp;lt;&amp;lt;getColor(node-&amp;gt;color())&amp;lt;&amp;lt;&quot;    &quot;;
+
+
+        if(node-&amp;gt;lc() != NULL)
+        {
+            q.push(node-&amp;gt;lc());
+            next ++;
+        }
+        if(node-&amp;gt;rc() != NULL)
+        {
+            q.push(node-&amp;gt;rc());
+            next += 1;
+        }
+
+        cur--;
+        if(cur &amp;lt;=0)
+        {
+            std::cout&amp;lt;&amp;lt;std::endl;
+            cur = next;
+            next = 0;
+        }
+    }
+    std::cout&amp;lt;&amp;lt;std::endl;
+}
+
+    template&amp;lt;class T,class Node&amp;gt;
+void BinTree&amp;lt;T,Node&amp;gt;::dfs_recur(Node* node)
+{
+    if(node-&amp;gt;lc() != nil)
+    {
+        dfs_recur(node-&amp;gt;lc());
+    }
+    if(node-&amp;gt;rc() != nil)
+    {
+        dfs_recur(node-&amp;gt;rc());
+    }
+    std::cout&amp;lt;&amp;lt;&quot; &quot;&amp;lt;&amp;lt;node-&amp;gt;data()&amp;lt;&amp;lt;&quot; &quot;;
+}
+
+    template&amp;lt;class T,class Node&amp;gt;
+Node* BinTree&amp;lt;T,Node&amp;gt;::minimum(Node* node)
+{
+
+    while(node-&amp;gt;lc() != nil)
+    {
+        node = node-&amp;gt;lc();
+    }
+    return node;
+
+
+}
+
+    template&amp;lt;class T,class Node&amp;gt;
+void BinTree&amp;lt;T,Node&amp;gt;::transplant(Node* u, Node* v)
+{
+    if(u-&amp;gt;p() == nil)
+    {
+        _root = v;
+    }
+    else if(u == u-&amp;gt;p()-&amp;gt;lc())
+    {
+        u-&amp;gt;p()-&amp;gt;lc() = v;
+    }
+    else
+    {
+        u-&amp;gt;p()-&amp;gt;rc() = v;
+    }
+    v-&amp;gt;p() = u-&amp;gt;p();
+}
+    template&amp;lt;class T,class Node&amp;gt;
+void BinTree&amp;lt;T,Node&amp;gt;::deletenode(Node* z)
+{
+    Node* y = z;
+    Node* x= nil;
+    int y_original_color = y-&amp;gt;color();
+    if (z-&amp;gt;lc() == nil)
+    {
+        x = z-&amp;gt;rc();
+        transplant(z,z-&amp;gt;rc());
+    }
+    else if(z-&amp;gt;rc() == nil)
+    {
+        x = z-&amp;gt;lc();
+        transplant(z,z-&amp;gt;lc());
+    }
+    else
+    {
+        y = minimum(z-&amp;gt;rc());
+        y_original_color = y-&amp;gt;color();
+        x = y-&amp;gt;rc();
+        if(y-&amp;gt;p() == z)
+        {
+            x-&amp;gt;p() = y;
+        }
+        else
+        {
+            transplant(y,y-&amp;gt;rc());
+            y-&amp;gt;rc() = z-&amp;gt;rc();
+            y-&amp;gt;rc()-&amp;gt;p() = y;
+        }
+        transplant(z,y);
+        y-&amp;gt;lc() = z-&amp;gt;lc();
+        y-&amp;gt;lc()-&amp;gt;p() = y;
+        y-&amp;gt;color() = z-&amp;gt;color();
+    }
+    if(y_original_color == BLACK)
+    {
+        std::cout&amp;lt;&amp;lt;&quot;delete_fixup &quot;&amp;lt;&amp;lt;x-&amp;gt;data()&amp;lt;&amp;lt;std::endl;
+        delete_fixup(x);
+    }
+
+}
+
+    template&amp;lt;class T,class Node&amp;gt;
+void BinTree&amp;lt;T,Node&amp;gt;::delete_fixup(Node* x)
+{
+    Node * w;
+    while( x != _root &amp;amp;&amp;amp; x-&amp;gt;color() == BLACK)
+    {
+        if(x == x-&amp;gt;p()-&amp;gt;lc())
+        {
+            w = x-&amp;gt;p()-&amp;gt;rc();
+            if(w-&amp;gt;color() == RED) // case 1
+            {
+                w-&amp;gt;color() = BLACK;
+                x-&amp;gt;p()-&amp;gt;color() = BLACK;
+                left_rotate(x-&amp;gt;p());
+                w = x-&amp;gt;p()-&amp;gt;rc();
+            }
+            if(w-&amp;gt;lc()-&amp;gt;color() == BLACK &amp;amp;&amp;amp; w-&amp;gt;rc()-&amp;gt;color() == BLACK)
+            {
+                w-&amp;gt;color() = RED;
+                x = x-&amp;gt;p();
+            }
+            else
+            {
+                if(w-&amp;gt;rc()-&amp;gt;color() == BLACK)
+                {
+                    w-&amp;gt;lc()-&amp;gt;color() = BLACK;
+                    w-&amp;gt;color() = RED;
+                    right_rotate(w);
+                    w = x-&amp;gt;p()-&amp;gt;rc();
+                }
+                w-&amp;gt;color() = x-&amp;gt;p()-&amp;gt;color();
+                x-&amp;gt;p()-&amp;gt;color()  = BLACK;
+                w-&amp;gt;rc()-&amp;gt;color() = BLACK;
+                left_rotate(x-&amp;gt;p());
+                x = _root;
+            }
+        }
+        else
+        {
+            w = x-&amp;gt;p()-&amp;gt;lc();
+            if(w-&amp;gt;color() == RED)
+            {
+                w-&amp;gt;color() = BLACK;
+                x-&amp;gt;p()-&amp;gt;color() = RED;
+                right_rotate(x-&amp;gt;p());
+                w = x-&amp;gt;p()-&amp;gt;lc();
+            }
+            if(w-&amp;gt;lc()-&amp;gt;color() == BLACK &amp;amp;&amp;amp; w-&amp;gt;rc()-&amp;gt;color() == BLACK)
+            {
+                w-&amp;gt;color() = RED;
+                x = x-&amp;gt;p();
+            }
+            else
+            {
+                if(w-&amp;gt;lc()-&amp;gt;color() == BLACK)
+                {
+                    w-&amp;gt;rc()-&amp;gt;color() = BLACK;
+                    w-&amp;gt;color() = RED;
+                    left_rotate(w);
+                    w = x-&amp;gt;p()-&amp;gt;lc();
+                }
+                w-&amp;gt;color() = x-&amp;gt;p()-&amp;gt;color();
+                x-&amp;gt;p()-&amp;gt;color() = BLACK;
+                w-&amp;gt;lc()-&amp;gt;color() = BLACK;
+                right_rotate(x-&amp;gt;p());
+                x = _root;
+            }
+        }
+    }
+    x-&amp;gt;color() =BLACK;
+}
+    template&amp;lt;class T,class Node&amp;gt;
+void BinTree&amp;lt;T,Node&amp;gt;::left_rotate(Node* x)
+{
+    Node* y = x-&amp;gt;rc();
+    x-&amp;gt;rc() = y-&amp;gt;lc();
+    if(y-&amp;gt;lc() != nil)
+    {
+        y-&amp;gt;lc()-&amp;gt;p() = x;
+    }
+    y-&amp;gt;p() = x-&amp;gt;p();
+    if(x-&amp;gt;p() == nil)
+    {
+        _root = y;
+    }
+    else if (x == x-&amp;gt;p()-&amp;gt;lc())
+    {
+        x-&amp;gt;p()-&amp;gt;lc() = y;
+    }
+    else if(x == x-&amp;gt;p()-&amp;gt;rc())
+    {
+        x-&amp;gt;p()-&amp;gt;rc() = y;
+    }
+    y-&amp;gt;lc() = x;
+    x-&amp;gt;p() = y;
+}
+    template&amp;lt;class T,class Node&amp;gt;
+void BinTree&amp;lt;T,Node&amp;gt;::right_rotate(Node* y)
+
+{
+
+    Node* x = y-&amp;gt;lc();
+    y-&amp;gt;lc()  = x-&amp;gt;rc();
+    if(x-&amp;gt;rc() != nil)
+    {
+        x-&amp;gt;rc()-&amp;gt;p() = y;
+    }
+    x-&amp;gt;p() = y-&amp;gt;p();
+    if(y-&amp;gt;p() == nil)
+    {
+        _root = x;
+    }
+    else if(y == y-&amp;gt;p()-&amp;gt;lc())
+    {
+        y-&amp;gt;p()-&amp;gt;lc() = x;
+    }
+    else if(y == y-&amp;gt;p()-&amp;gt;rc())
+    {
+        y-&amp;gt;p()-&amp;gt;rc() =x;
+    }
+    x -&amp;gt;rc() = y;
+    y-&amp;gt;p() = x;
+}
+    template&amp;lt;class T,class Node&amp;gt;
+void BinTree&amp;lt;T,Node&amp;gt;::insert_fixup(Node* z)
+{
+    Node* y;
+    while(z-&amp;gt;p()-&amp;gt;color() == RED)
+    {
+        if(z-&amp;gt;p() == z-&amp;gt;p()-&amp;gt;p()-&amp;gt;lc())
+        {
+            y = z-&amp;gt;p()-&amp;gt;p()-&amp;gt;rc();
+            if (y-&amp;gt;color() == RED)
+            {
+                z-&amp;gt;p()-&amp;gt;color() = BLACK;
+                y-&amp;gt;color() = BLACK;
+                z-&amp;gt;p()-&amp;gt;p()-&amp;gt;color() = RED;
+                z = z-&amp;gt;p()-&amp;gt;p();
+            }
+            else
+            {
+                if(z == z-&amp;gt;p()-&amp;gt;rc())
+                {
+                    z = z-&amp;gt;p();
+                    left_rotate(z);
+                }
+                z-&amp;gt;p()-&amp;gt;color() = BLACK;
+                z-&amp;gt;p()-&amp;gt;p()-&amp;gt;color() = RED;
+                right_rotate(z-&amp;gt;p()-&amp;gt;p());
+            }
+        }
+        else
+        {
+            //std::cout&amp;lt;&amp;lt;&quot;case 2'&quot;&amp;lt;&amp;lt;std::endl;
+            y = z-&amp;gt;p()-&amp;gt;p()-&amp;gt;lc();
+            if (y -&amp;gt;color() == RED)
+            {
+                z-&amp;gt;p()-&amp;gt;color() = BLACK;
+                y-&amp;gt;color() = BLACK;
+                z-&amp;gt;p()-&amp;gt;p()-&amp;gt;color() = RED;
+                z = z-&amp;gt;p()-&amp;gt;p();
+            }
+            else
+            {
+                if (z == z-&amp;gt;p()-&amp;gt;lc())
+                {
+                    z = z-&amp;gt;p();
+                    right_rotate(z);
+                    //std::cout&amp;lt;&amp;lt;&quot;right_rotate for case 2&quot;&amp;lt;&amp;lt;std::endl;
+                    //bfs();
+                }
+                z-&amp;gt;p()-&amp;gt;color() = BLACK;
+                z-&amp;gt;p()-&amp;gt;p()-&amp;gt;color() = RED;
+                left_rotate(z-&amp;gt;p()-&amp;gt;p());
+            }
+        }
+    }
+    _root-&amp;gt;color() = BLACK;
+}
+
+    template&amp;lt;class T,class Node&amp;gt;
+void BinTree&amp;lt;T,Node&amp;gt;::insert(Node* node)
+{
+    Node* y = nil;
+    Node* x= _root;;
+    while (x != nil)
+    {
+        y = x;
+        if(node-&amp;gt;data() &amp;lt; x-&amp;gt;data())
+        {
+            x = x-&amp;gt;lc();
+        }
+        else
+        {
+            x = x-&amp;gt;rc();
+        }
+    }
+    node-&amp;gt;p() = y;
+    if (y == nil )
+    {
+        _root = node;
+    }
+    else if(node-&amp;gt;data() &amp;lt; y-&amp;gt;data())
+    {
+        y-&amp;gt;lc() = node;
+    }
+    else
+    {
+        y-&amp;gt;rc() = node;
+    }
+    node-&amp;gt;lc() = nil;
+    node-&amp;gt;rc() = nil;
+    node-&amp;gt;color() = RED;
+    //std::cout&amp;lt;&amp;lt;&quot;before insert_fixup &quot;&amp;lt;&amp;lt;std::endl;
+    //bfs();
+    //std::cout&amp;lt;&amp;lt;&quot;===================&quot;&amp;lt;&amp;lt;std::endl;
+    insert_fixup(node);
+}
+
+
+#endif
+
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;pre&gt;&lt;code&gt;#ifndef __INTERVAL_TREE_H__
+#define __INTERVAL_TREE_H__ 1
+
+#include &amp;lt;algorithm&amp;gt;
+#include &quot;redblacktree.h&quot;
+
+// use low as BinNode key
+class IntervalNode
+{
+    public:
+
+        IntervalNode(int noop)
+            :_low(noop),_high(noop),_max(noop),_lc(NULL),_rc(NULL),_p(NULL)
+        {
+
+        }
+        IntervalNode(int low, int high)
+            :_low(low),_high(high),_max(high),_lc(NULL),_rc(NULL),_p(NULL)
+        {
+        }
+
+        IntervalNode*&amp;amp; lc() {return _lc;}
+        IntervalNode*&amp;amp; rc() {return _rc;}
+        IntervalNode*&amp;amp; p() {return _p;}
+        int &amp;amp; color() {return _color;}
+
+        int&amp;amp; data() {return _low;}
+
+        int&amp;amp; low() {return _low;}
+        int&amp;amp; high() {return _high;}
+
+        int&amp;amp; max() {return _max;}
+        bool overlap(IntervalNode* i)
+        {
+            return  _low &amp;lt;= i-&amp;gt;high() &amp;amp;&amp;amp; _high &amp;gt;= i-&amp;gt;low();
+        }
+    private:
+        int _low;
+
+        int _high;
+
+        int _max;
+
+        int _color;
+        IntervalNode* _lc;
+        IntervalNode* _rc;
+        IntervalNode* _p;
+};
+
+class IntervalTree:public BinTree&amp;lt;int,IntervalNode&amp;gt;
+{
+    public:
+        IntervalTree()
+        {
+        }
+    public:
+        static IntervalNode* make_node(int low, int high)
+        {
+            IntervalNode* node = new IntervalNode(low,high);
+            node-&amp;gt;color() = RED;
+
+            node-&amp;gt;lc() = nil;
+            node-&amp;gt;rc() = nil;
+            node-&amp;gt;p() = nil;
+
+            return node;
+ 
+        }
+    public:
+        IntervalNode* IntervalSearch(IntervalNode* i)
+        {
+           IntervalNode* x =this-&amp;gt; _root; 
+           while( x != nil &amp;amp;&amp;amp; ! x-&amp;gt;overlap(i))
+           {
+               if(x-&amp;gt;lc() != nil &amp;amp;&amp;amp; x-&amp;gt;lc()-&amp;gt;max() &amp;gt; i-&amp;gt;low())
+               {
+                    x= x-&amp;gt;lc();
+               }
+               else
+               {
+                   x = x-&amp;gt;rc();
+               }
+                       
+           }
+           return x;
+        }
+    protected:
+        void left_rotate(IntervalNode* x) override
+        {
+            IntervalNode* y = x-&amp;gt;rc();
+            IntervalNode* y_lc = y-&amp;gt;lc();
+            IntervalNode* y_rc = x-&amp;gt;rc();
+            BinTree&amp;lt;int,IntervalNode&amp;gt;::left_rotate(x);
+            int x_max = x-&amp;gt;high();
+            if( x-&amp;gt;lc() != nil)
+            {
+                x_max = std::max(x_max, x-&amp;gt;lc()-&amp;gt;max());
+            }
+            if ( y_lc != nil)
+            {
+                x_max = std::max(x_max, y_lc-&amp;gt;max());
+            }
+            x-&amp;gt;max() = x_max;
+
+            int y_max = y-&amp;gt;high();
+            y_max = std::max(y_max,x_max);
+            if(y_rc != nil)
+            {
+                y_max = std::max(y_max,y_rc-&amp;gt;max());
+            }
+            y_rc-&amp;gt;max() = y_max;
+        }
+        void right_rotate(IntervalNode* y)  override
+        {
+            IntervalNode* x = y-&amp;gt;lc();
+            IntervalNode* x_lc = x-&amp;gt;lc();
+            IntervalNode* x_rc = x-&amp;gt;rc();
+            BinTree&amp;lt;int,IntervalNode&amp;gt;::right_rotate(y);
+            int y_max = y-&amp;gt;high();
+            if (x_rc != nil)
+            {
+                y_max = std::max(x_rc-&amp;gt;max(),y_max);
+            }
+            if(y-&amp;gt;rc() != nil)
+            {
+                y_max = std::max(y-&amp;gt;rc()-&amp;gt;max(),y_max);
+            }
+            y-&amp;gt;max() = y_max;
+            int x_max = x-&amp;gt;high();
+            x_max = std::max(x_max, y_max);
+            if(x_lc != nil)
+            {
+                x_max = std::max(x_lc-&amp;gt;max(), x_max);
+            }
+            x-&amp;gt;max() = x_max;
+        }
+};
+
+#endif 
+&lt;/code&gt;&lt;/pre&gt;
+</content>
+ </entry>
+ 
+ <entry>
+   <title>BM算法（字符串快速匹配算法）</title>
+   <link href="http://localhost:4001/2020/01/04/faststringsearch"/>
+   <updated>2020-01-04T00:00:00+08:00</updated>
+   <id>http://localhost:4001/2020/01/04/faststringsearch</id>
+   <content type="html">&lt;h2 id=&quot;综述&quot;&gt;综述&lt;/h2&gt;
+&lt;p&gt;本文目的在于读论文&lt;a href=&quot;https://www.cs.utexas.edu/users/moore/publications/fstrpos.pdf&quot;&gt;“A Fast String Searching Algorithm”&lt;/a&gt;&lt;/p&gt;
+
+&lt;!--more--&gt;
+
+&lt;p&gt;字符串string
+匹配串P，长度patlen。
+对字符串T和匹配串P进行匹配，如果自右向左进行匹配，而不是自左向右，有如下观察：&lt;/p&gt;
+&lt;ol&gt;
+  &lt;li&gt;如果对于第一个匹配，即P[patlen]处的字符X和T[i]处的字符Y不匹配，而匹配串P中不含任何Y，那么
+我们下次匹配的时候，可以直接跳过Y，那么下次匹配的时候可以直接右移patlen的长度即可。
+&lt;img src=&quot;/assets/faststringsearch/2019_12_23_21_36.46.bmp&quot; alt=&quot;operation 1&quot; /&gt;&lt;/li&gt;
+  &lt;li&gt;如果P中包含Y,假设Y的字符的位置距离P右侧的距离为delta，那么此时，我们可以直接将P右移delta的长度，
+直接让P中右边第一个Y出现的位置对上我们当前string中正在匹配的字符Y。
+&lt;img src=&quot;/assets/faststringsearch/2019_12_23_22_07.51.bmp&quot; alt=&quot;operation 2&quot; /&gt;&lt;/li&gt;
+  &lt;li&gt;现在假设我们自右边开始的匹配一一满足，那么我们可以一直自右向左的匹配。那么此时只有
+两种结果，或者我们全部匹配完了P，此时我们匹配成功了；或者我们在某个位置匹配失败。很明显，
+现在感兴趣的是我们在某个位置匹配失败的情况。我们把在某个失败之前匹配成功的距离记为m。
+&lt;img src=&quot;/assets/faststringsearch/2019_12_23_22_23.17.bmp&quot; alt=&quot;operation 3&quot; /&gt;
+3(a) 我们可以基于之前的逻辑，在X的左侧，我们找到第一个出现的Y，我们假设这个Y为Y1，
+将Y1右移动到我们string中目前Y的位置。假设这个Y1距离X的长度为k，那么我们只需右移k即可。
+&lt;img src=&quot;/assets/faststringsearch/2019_12_24_10_17.34.bmp&quot; alt=&quot;operation 4&quot; /&gt;
+此时，我们重新开始匹配的话，通用从P的最右端开始匹配，匹配的位置距离当前位置k+m的长度。
+假设，P中最右侧的Y1出现在X的右侧，此时，P可以使得Y1与Y进行匹配，但这并不是我们想要的。
+或者说，对于回退P的验证，我们应该在之前的搜寻中包括了。此时，我们简单的右移1.
+&lt;img src=&quot;/assets/faststringsearch/2019_12_24_10_54.53.bmp&quot; alt=&quot;operation 5&quot; /&gt;
+&lt;img src=&quot;/assets/faststringsearch/2019_12_24_10_57.36.bmp&quot; alt=&quot;operation 6&quot; /&gt;
+3(b)现在我们看下另一种情况。同样在第一次不匹配之前，我们已经匹配了m个字符了，我们把这个字符串
+称为子串sP，那么，我们可预想到，在下次右移后，这个子串sP一定是匹配的，或者说sP在P中，除了末尾出现
+一次，还在之前也出现过。且这个子串的前序字符Z一定与X不一致。
+&lt;img src=&quot;/assets/faststringsearch/2019_12_24_11_23.38.bmp&quot; alt=&quot;operation 7&quot; /&gt;
+&lt;img src=&quot;/assets/faststringsearch/2019_12_24_11_35.25.bmp&quot; alt=&quot;operation 8&quot; /&gt;&lt;/li&gt;
+&lt;/ol&gt;
+
+&lt;p&gt;目前为止，我们已经说了三种可以跳转的情况，我们只需从这三种情况中选择最远的跳转即可。&lt;/p&gt;
+
+&lt;h2 id=&quot;算法&quot;&gt;算法&lt;/h2&gt;
+&lt;pre&gt;&lt;code&gt;input:	string, pat
+
+		stringlen := length of string
+		i := patlen
+top:	
+		if i&amp;gt; stringlen then return false
+		j := patlen
+loop:	
+		if j==0 then return i+1
+		if string(i) == pat(j) then
+			j = j - 1
+			i = i - 1
+			goto loop
+			close;
+		i = i + max(delta1(string(i)), delta2(j))
+		goto top
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;pre&gt;&lt;code&gt;delta1(char) :=  if char does not occur in pat, 
+					then patlen;
+				else patlen - j,
+				where j is the maximum integer such that
+				pat(j) == char.
+delta2(j)	:= k + m
+			k : the discovered occurence (in string) of the last patlen-j characters of pat
+			m : additional distance we have already matched
+			:= patlen + 1 - rpr(j)
+rpr(j)		:= the rightmost plausible reoccurrence 
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;h3 id=&quot;delta1的构造&quot;&gt;delta1的构造&lt;/h3&gt;
+&lt;pre&gt;&lt;code&gt;make_delta1:
+
+input:	pat
+		
+		patlen := pat.length
+		delta1 := array[256] // 把所有字符表都遍历一遍, array 从1开始
+		j := 1;
+loop:
+		delta1[j] := patlen
+		j := j + 1
+		if j &amp;lt;= 256 then goto loop
+		j := 1;
+delta:
+		delta1[pat[j]] := patlen - j
+		if j &amp;lt;= patlen then goto delta
+		
+&lt;/code&gt;&lt;/pre&gt;
+&lt;h3 id=&quot;delta2的构造&quot;&gt;delta2的构造&lt;/h3&gt;
+&lt;p&gt;我们先构造rpr表，即对每一个后缀找到the rightmost plausible reoccurrence.
+这里论文中没有给出明确的方案，这里搜寻了下&lt;a href=&quot;https://en.wikipedia.org/wiki/Boyer%E2%80%93Moore_string-search_algorithm&quot;&gt;wiki&lt;/a&gt;
+采用wiki里提到的delta2的实现方案，并且只考虑rpr的情况。这里统一下标从1开始计算。&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;suffix_length: // 算出在pos处最长后缀的长度
+
+input:	pat, pos
+
+		patlen := pat.length
+		i := 0
+		
+loop:	if (pat[pos-i] == word[patlen-i]) and ( i&amp;lt; pos) then
+			++i
+			goto loop
+			
+		return i
+
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;pre&gt;&lt;code&gt;make_delta2:
+
+input:	pat
+
+		patlen := pat.length
+		p := 1		
+loop:	
+		if p &amp;lt; patlen then
+			slen := suffix_length(pat, p)
+			if ((p-slen &amp;lt;=0) or // 这里加个前序不存在的判定,wiki里这种情况通过loop1考虑了
+				(pat[p-slen] != pat[patlen - slen]) then
+				delta2[patlen - slen] = patlen - p + slen
+			p ++
+			goto loop
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;h2 id=&quot;实现细节&quot;&gt;实现细节&lt;/h2&gt;
+&lt;p&gt;使用delta0替换delta1，&lt;code&gt;delta0(pat(patlen)) := large := stringlen + patlen + 1&lt;/code&gt;&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;input: 	string, pat
+
+		stringlen := string.length
+		patlen := pat.length
+		i := patlen
+		if i &amp;gt; stringlen then return false
+fast:	
+		i := i + delta0(string(i))
+		if i&amp;lt;= stringlen then goto fast
+undo:	if i &amp;lt;= large then 	return false
+		i := (i - large) -1
+		j := patlen -1
+slow:	if j == 0 return i + 1
+		if string(i) == pat(j)
+			then 
+			j := j-1
+			i := i-1
+			goto slow
+			close
+		i := i + max(delta1(string(i)), delta2(j))
+		goto fast			
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;这部分代码比较难理解。是作者为了优化算法速度做的实现，原理与之前的版本是一致的。这里细细剖析下。&lt;/p&gt;
+
+&lt;p&gt;首先看下&lt;code&gt;fast&lt;/code&gt;循环进来和结束的状态与条件：&lt;/p&gt;
+&lt;ul&gt;
+  &lt;li&gt;程序开始时进入，此时&lt;code&gt;i &amp;lt;= stringlen&lt;/code&gt;，或者确切的说&lt;code&gt;i := patlen&lt;/code&gt;。进入&lt;code&gt;fast&lt;/code&gt;后运行&lt;code&gt;i := i + string(patlen)&lt;/code&gt;。
+    &lt;ul&gt;
+      &lt;li&gt;如果，&lt;code&gt;string(patlen)&lt;/code&gt;与&lt;code&gt;pat(patlen)&lt;/code&gt;不相等，此时右移到下一次匹配的位置；&lt;/li&gt;
+      &lt;li&gt;如果，&lt;code&gt;string(patlen)&lt;/code&gt;与&lt;code&gt;pat(patlen)&lt;/code&gt;相等，此时右移large；&lt;/li&gt;
+      &lt;li&gt;判断 &lt;code&gt;i &amp;lt;= stringlen&lt;/code&gt;，如果&lt;code&gt;i &amp;gt; stringlen&lt;/code&gt;，并且&lt;code&gt;i &amp;gt; large&lt;/code&gt;，这说明我们的末尾字符匹配成功，可以进入&lt;code&gt;slow&lt;/code&gt;逻辑继续匹配。&lt;/li&gt;
+      &lt;li&gt;如果&lt;code&gt;i&amp;gt; stringlen&lt;/code&gt;,但&lt;code&gt;i &amp;lt;= large&lt;/code&gt;，这说明，我们末尾字符没有匹配成功，但是&lt;code&gt;i&lt;/code&gt;移出了string的范围，匹配失败。&lt;/li&gt;
+    &lt;/ul&gt;
+  &lt;/li&gt;
+  &lt;li&gt;从&lt;code&gt;slow&lt;/code&gt;中进入，此时&lt;code&gt;string(i) != pat(j)&lt;/code&gt;，出现了第一次不匹配，&lt;code&gt;i&lt;/code&gt;更新为&lt;code&gt;i + max(delta1(string(i)), delta2(j))&lt;/code&gt;，
+注意这里，使用的仍然是&lt;code&gt;delta1&lt;/code&gt;。&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;&lt;code&gt;slow&lt;/code&gt;的逻辑与原版算法基本一致。&lt;/p&gt;
+
+&lt;p&gt;这版算法将对&lt;code&gt;patlen&lt;/code&gt;处字符的匹配单独提出，作者评估过80%的匹配时间都消耗在&lt;code&gt;fast&lt;/code&gt;loop，通过将这部分代码单独提出，使用机器指令单独编码，可以加快算法的运行
+速度。&lt;/p&gt;
+
+&lt;h2 id=&quot;理论分析&quot;&gt;理论分析&lt;/h2&gt;
+&lt;p&gt;这部分见论文吧，通过概率模型分析，运行时间是c*(i + patlen) c&amp;lt; 1。&lt;/p&gt;
+
+&lt;h2 id=&quot;代码实现&quot;&gt;代码实现&lt;/h2&gt;
+&lt;pre&gt;&lt;code&gt;
+#include &amp;lt;iostream&amp;gt;
+#include &amp;lt;algorithm&amp;gt;
+
+
+
+void make_delta1(const char* pat, int patlen, int* delta1)
+{	
+	for(int i = 0; i &amp;lt; 256; ++i)
+	{
+		delta1[i] = patlen;
+	}
+	for(int i = 0; i &amp;lt; patlen; ++i)
+	{
+		delta1[(int)pat[i]] = patlen - i -1; // we start index from zero	
+	}
+}
+
+int suffix_length(const char* pat, int patlen,int pos)
+{
+	int i = 0;
+	while( i &amp;lt;= pos 
+			&amp;amp;&amp;amp; pat[pos-i] == pat[patlen-i-1])
+	{
+			++i;
+			
+	}
+	return i;
+}
+
+
+
+void make_delta2(const char* pat, int patlen, int* delta2)
+{	
+	// 默认正在p处不匹配时，直接移动到+1的位置进行新的匹配，
+	// 最慢的
+	// 默认值
+	for(int p = 0; p &amp;lt; patlen; ++p)
+	{
+		delta2[p] = patlen - p ;
+	}
+	for(int p = 0; p &amp;lt; patlen-1;++p)
+	{
+		int slen = suffix_length(pat, patlen, p);
+		
+		if(p - slen &amp;lt; 0 || pat[p-slen] != pat[patlen-slen])
+		{
+			delta2[patlen-slen -1] = patlen - p -1 + slen;
+			//std::cout&amp;lt;&amp;lt;&quot; set delta2 &quot;&amp;lt;&amp;lt;patlen-slen -1 &amp;lt;&amp;lt; &quot; = &quot;&amp;lt;&amp;lt;patlen-p-1 + slen&amp;lt;&amp;lt;std::endl;
+		}
+	}
+
+}
+
+int match(const char* txt, int txtLen, const char* pat, int patlen)
+{
+		
+		int delta1[256];
+		make_delta1(pat, patlen, delta1);
+		
+		int* delta2 = new int[patlen];
+		make_delta2(pat, patlen, delta2);
+		
+		int j = patlen-1;
+		int i = patlen - 1;
+		while( i &amp;lt; txtLen)
+		{
+			int j = patlen-1;
+			//std::cout&amp;lt;&amp;lt;&quot; i = &quot;&amp;lt;&amp;lt;i&amp;lt;&amp;lt;&quot; j = &quot;&amp;lt;&amp;lt;j&amp;lt;&amp;lt;std::endl;
+			while( j &amp;gt;= 0)
+			{
+				//std::cout&amp;lt;&amp;lt;&quot; compare &quot;&amp;lt;&amp;lt;txt[i] &amp;lt;&amp;lt; &quot; and &quot;&amp;lt;&amp;lt;pat[j]&amp;lt;&amp;lt;std::endl;
+				if(txt[i] == pat[j])
+				{
+					j--;
+					i--;
+				}
+				else{
+					break;
+				}
+			}
+			if(j &amp;lt;0)
+			{
+				return i + 1;
+			}
+			//std::cout&amp;lt;&amp;lt;&quot; delta1 = &quot;&amp;lt;&amp;lt;delta1[txt[i]] &amp;lt;&amp;lt; &quot; delta2 = &quot;&amp;lt;&amp;lt;delta2[j]&amp;lt;&amp;lt;std::endl;
+			i = i + std::max(delta1[txt[i]],delta2[j]);
+		}
+		return -1;
+}
+&lt;/code&gt;&lt;/pre&gt;
+&lt;h2 id=&quot;附&quot;&gt;附&lt;/h2&gt;
+&lt;p&gt;在 “Knuth D.E. Morris J.H., and Pratt, V.R. Fast pattern matching in strings”中Knuth提出了线性时间
+构造delta2的方法。&lt;/p&gt;
+</content>
+ </entry>
+ 
+ <entry>
+   <title>红黑树</title>
+   <link href="http://localhost:4001/2020/01/03/redblacktre"/>
+   <updated>2020-01-03T00:00:00+08:00</updated>
+   <id>http://localhost:4001/2020/01/03/redblacktre</id>
+   <content type="html">&lt;h1 id=&quot;红黑树&quot;&gt;红黑树&lt;/h1&gt;
+&lt;p&gt;本篇文章的目的，学习红黑树。使用教材，”Introduction to Algorithms 3rd”。&lt;/p&gt;
+
+&lt;!--more--&gt;
+
+&lt;p&gt;##综述
+首先，红黑树的五种属性：&lt;/p&gt;
+&lt;ol&gt;
+  &lt;li&gt;每个节点必然时红色或者黑色；&lt;/li&gt;
+  &lt;li&gt;根节点是黑色；&lt;/li&gt;
+  &lt;li&gt;每个叶子节点也是黑色；&lt;/li&gt;
+  &lt;li&gt;如果一个节点是红色，那么它的子节点必然是黑色；&lt;/li&gt;
+  &lt;li&gt;对每个节点从根节点到后代叶子节点的路径上有同样多的黑色节点；&lt;/li&gt;
+&lt;/ol&gt;
+
+&lt;p&gt;&lt;strong&gt;黑高度&lt;/strong&gt; : 对每个节点x到其后代叶子节点的路径上黑节点的数量，但不包括x本身，记作bh(x).
+我们将根节点的黑高度记作红黑树的黑高度。&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;Lemma 1&lt;/strong&gt; 
+内部节点数为n的红黑树树高最多2lg(n+1).&lt;/p&gt;
+
+&lt;p&gt;简单的证明：&lt;/p&gt;
+&lt;ul&gt;
+  &lt;li&gt;对任一节点x来说至少有pow(2,bh(x)) -1个内部节点,这点可以用归纳法证明&lt;/li&gt;
+  &lt;li&gt;由属性4，对于树高为h的红黑树，除了根节点外至少有h/2的节点为黑。&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;##旋转
+旋转分为左旋和右旋。&lt;/p&gt;
+
+&lt;p&gt;左旋x节点，z的左子节点接到x的右侧，x接到z的左侧。&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;/assets/redblacktree/left_rotate_left.png&quot; alt=&quot;operation 1&quot; /&gt;   &lt;img src=&quot;/assets/redblacktree/left_rotate_right.png&quot; alt=&quot;operation 2&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;右旋x节点，y的右子节点接到x的左侧，x接到y的右侧。&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;/assets/redblacktree/left_rotate_left.png&quot; alt=&quot;operation 1&quot; /&gt; &lt;img src=&quot;/assets/redblacktree/right_rotate_right.png&quot; alt=&quot;operation 3&quot; /&gt;&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;Left-Rotate(T,x)
+    y = x.right 
+    x.right = y.left
+    if y.left != T.nil
+        y.left.p = x
+    y.p = x.p
+    if x.p == T.nil
+        T.root = y
+    elseif x == x.p.left
+        x.p.left = y
+    elseif x == x.p.right
+        x.p.right = y
+    y.left = x
+    x.p = y
+&lt;/code&gt;&lt;/pre&gt;
+&lt;pre&gt;&lt;code&gt;Right-Rotate(T,y)
+    x = y.left
+    y.left = x.right;
+    if x.right != T.nil
+        x.right.p = y
+    x.p = y.p
+    if y.p == T.nil
+        T.root = x
+    elseif y == y.p.left
+        y.p.left = x
+    elseif y == y.p.right
+        y.p.right = x
+    x.right = y
+    y.p = x
+&lt;/code&gt;&lt;/pre&gt;
+&lt;h2 id=&quot;插入&quot;&gt;插入&lt;/h2&gt;
+
+&lt;pre&gt;&lt;code&gt;RB-INSERT(T,z)
+    y = T.nil
+    x = T.root
+    while x != T.nil
+        y = x
+        if z.key &amp;lt; x.key
+            x = x.left
+        else x= x.right
+    z.p = y
+    if y == T.nil
+        T.root = z
+    elseif z.key &amp;lt; y.key
+        y.left = z
+    else y.right = z
+    z.left = T.nil
+    z.right = T.nil
+    z.color = RED
+    RB-INSERT-FIXUP(T,z)
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;对于&lt;code&gt;RB-INSERT-FIXUP&lt;/code&gt;，考虑插入z后,由于z为红色，只有属性2和4可能不满足。&lt;/p&gt;
+&lt;ul&gt;
+  &lt;li&gt;属性2不满足的情况在于， z插入后为根节点；&lt;/li&gt;
+  &lt;li&gt;属性4不满足的情况在于，z插入后，z的父节点也为红色。&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;插入操作保持循环不变性：
+a. 节点z是红色节点；
+b. 如果z.p是根节点，那么z.p必然是黑色；
+c. 树的插入至多只会导致一条属性不满足。&lt;/p&gt;
+
+&lt;p&gt;循环不变性的证明：&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;Initialization:
+    a. 在开始时，z作为红色节点插入；
+    b. 如果z.p是根节点，那么根节点必然时黑节点；
+    c. 如果属性2不满足，那么z必然是作为根节点插入的,且此时只有可能这一条属性不满足；如果
+    属性4 不满足，则此时z.p与z均是红节点，同样只有可能这一条熟悉不满足。
+
+Termination:
+    a. 循环只会在节点z的父亲z.p未黑色节点时结束，通过在循环结束时将树根节点设置为黑色，属性2与4就都满足了。
+
+Maintenance:
+    如果插入后，属性4不满足，z.p为红色，那么z.p.p必然为黑节点。
+   case 1: z的叔叔节点是红色。 z.p与y均为红色节点。此时我们将z.p与y均染成黑色，将
+   z.p.p染成红色，那么对于z来说，可保持属性4和属性5。新的可能出现问题的节点上移到z.p.p。
+   case 2: z的叔叔节点是黑色，此时z是右孩子。
+   case 3: z的叔叔节点是黑色，此时z是左孩子。
+   对于情形2，我们对z.p左旋，从而将情形2化为情形3。此时z是左孩子，z与z.p均为红色，z的叔叔节点y时黑色，z.p.p不变。
+   我们将z.p染成黑色，z.p.p染成红色，然后右旋z.p.p。此时z.p变成黑色，属性2与4均满足，我们将z.p.p染成红色后，黑高减一，但现在我们将z.p染成黑色，黑高加一，于是属性5满足。
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;&lt;img src=&quot;/assets/redblacktree/insert_case1_left.png&quot; alt=&quot;operation 2&quot; /&gt;
+&lt;img src=&quot;/assets/redblacktree/insert_case2.png&quot; alt=&quot;operation 3&quot; /&gt;
+具体算法如下：&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;RB-INSERT-FIXUP(T,z)
+    while z.p.color == RED
+        if z.p == z.p.p.left
+            y = z.p.p.right
+            if y.color == RED               // case 1
+                z.p.color = BLACK
+                y.color = BLACK
+                z.p.p.color = RED
+                z = z.p.p
+            else
+                if z == z.p.right          // case 2
+                    z = z.p
+                    Left-Rotate(T,z)
+                z.p.color = BLACK          // case 3
+                z.p.p.color = RED          // case 3 
+                Right-Rotate(T,z.p.p)
+        else                               // z.p == z.p.p.right
+            y = z.p.p.left
+            if y.color == RED              // case 1'
+                z.p.color = BLACK
+                y.color = BLACK
+                z.p.p.color = RED
+                z= z.p.p
+            else
+                if z == z.p.left           // case 2'
+                    z = z.p
+                    Right-Rotate(T,z)
+                z.p.color = BLACK          // case 3'
+                z.p.p.color = RED          // case 3'
+                Left-Rotate(T,z.p.p)
+
+    T.root.color = BLACK
+
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;分析&lt;/p&gt;
+
+&lt;p&gt;对于有n个内部节点的红黑树，数高最多为O(lgn),那么&lt;code&gt;RB-INSERT-FIXUP&lt;/code&gt;中&lt;code&gt;while&lt;/code&gt;循环最多执行logn次，并且每次最多执行两次旋转。&lt;/p&gt;
+&lt;h2 id=&quot;删除&quot;&gt;删除&lt;/h2&gt;
+&lt;pre&gt;&lt;code&gt;RB-TRANSPLANT(T,u,v)
+    if u.p == T.nil
+        T.root = v
+    elseif u == u.p.left
+        u.p.left = v
+    else
+        u.p.right ==v
+    v.p = u.p
+&lt;/code&gt;&lt;/pre&gt;
+&lt;pre&gt;&lt;code&gt;RB-Delete(T,z)
+    y = z
+    y-original-color = y.color
+    if z.left == T.nil
+        x = z.right
+        RB-TRANSPLANT(T,z,z.right)
+    elseif z.right == T.nil
+        x = z.left
+        RB-TRANSPLANT(T,z,z.left)
+    else
+        y = TREE-MINIMUM(z.right) // y 是z的直接后继
+        y-original-color = y.color
+        x = y.right
+        if y.p == z
+            x.p = y
+        else 
+            RB-TRANSPLANT(T,y,y.right)
+            y.right = z.right
+            y.right.p = y
+        RB-TRANSPLANT(T,z,y)
+        y.left = z.left
+        y.left.p = y
+        y.color = z.color
+    if y-original-color == BLACK
+        RB-DELETE-FIXUP(T,x)
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;删除操作的解析。&lt;/p&gt;
+&lt;ul&gt;
+  &lt;li&gt;变量y用来记录准备删除或移动的节点。当z没有孩子或只有一个孩子时，y设置为z，我们直接删除y；当z有两个孩子时，我们将y设置为z的后置节点，将y移动到
+z的位置。&lt;/li&gt;
+  &lt;li&gt;由于节点y的颜色可能发生变化，我们记录y的原本颜色，并在删除操作结束时判断是否需要&lt;code&gt;RB-DELETE-FIXUP&lt;/code&gt;。&lt;/li&gt;
+  &lt;li&gt;由于y节点的移动，我们需要在y原来的位置填补新的节点，由以上讨论知道，y最多只有一个节点。我们将这个节点记作x，x节点或者是y的唯一子节点，或者是
+T.nil，我们将x移动到y原来的位置。这里需要注意的是，如果z的直接后继y的父亲节点就是z的子节点，此时x节点填补y移动后的位置应该将y作为父节点，而不是将y.p
+作为父节点，作为y.p的z会被我们删除。&lt;/li&gt;
+  &lt;li&gt;如果y是黑色，我们删除或者移动y都有可能造成红黑树属性不满足，我们必须在最后调用&lt;code&gt;RB-DELETE-FIXUP&lt;/code&gt;进行修复。
+    &lt;ul&gt;
+      &lt;li&gt;如果y是根节点，删除后y的一个红色子节点变成新的根，属性2不满足；&lt;/li&gt;
+      &lt;li&gt;如果x与x.p均为红色，属性4不满足；&lt;/li&gt;
+      &lt;li&gt;将y移动到z的位置后，原先包括y的路径会少一个黑高，属性5不满足。&lt;/li&gt;
+    &lt;/ul&gt;
+  &lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;先来考虑属性5不满足的情况。由于y作为一个黑色节点被删除或移动，x顶替y的位置，原先包含y的简单路径上的树高减一。我们直接将这个额外的树高赋给x，于是现在变成属性1不满足了,并且不满足的节点只有x，我们对此做处理：&lt;/p&gt;
+&lt;ul&gt;
+  &lt;li&gt;如果x是RED-BLACK节点，我们简单的将x染成黑色，属性1满足。此时bh(x)不变。&lt;/li&gt;
+  &lt;li&gt;如果x是BLACK-BLACK节点，且是根节点，我们将这个额外的黑色移除。于是总体树的黑高减一,属性1满足，属性5满足。&lt;/li&gt;
+  &lt;li&gt;如果x是BLACK-BLACK节点，且不是根节点，我们需要做旋转。
+    &lt;ul&gt;
+      &lt;li&gt;情形1,x的兄弟节点w是红节点。于是x必然有黑色的子节点，x.p必为黑色。我们将x.p的颜色与w的颜色互换，然后左旋x.p，此时，x的兄弟节点就变成黑色了,并且此时保持属性5不变。&lt;/li&gt;
+      &lt;li&gt;情形2，x的兄弟节点w是黑节点。w的子节点均是黑节点。我们将x与w均染红，将多出的黑色给于x的父节点x.p。此时x.p变成新的x继续处理。&lt;/li&gt;
+      &lt;li&gt;情形3，x的兄弟节点w是黑节点。w的左子节点是红，右子节点是黑色。我们将w的左子节点与w的颜色互换，并右旋w，这样就变成情形4。&lt;/li&gt;
+      &lt;li&gt;情形4，x的兄弟节点w是黑节点。w的右子节点是红色。我们将w与w.p的颜色互换。将w的右节点颜色置为黑色，并左旋x.p。这样，我们可以将x的BLACK-BLACK变成BLACK即可。
+对于属性4和属性2不满足，我们简单的将x置黑即可。&lt;/li&gt;
+    &lt;/ul&gt;
+  &lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;&lt;img src=&quot;/assets/redblacktree/delete_fix_up.png&quot; alt=&quot;operation 4&quot; /&gt;   &lt;img src=&quot;/assets/redblacktree/delete_fix_up_case_1_1.png&quot; alt=&quot;operation 4'&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;/assets/redblacktree/delete_fix_up_case2.png&quot; alt=&quot;operation 5&quot; /&gt;   &lt;img src=&quot;/assets/redblacktree/delete_fix_up_case2_1.png&quot; alt=&quot;operation 5'&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;/assets/redblacktree/delete_fix_up_case3.png&quot; alt=&quot;operation 6&quot; /&gt; &lt;img src=&quot;/assets/redblacktree/delete_fix_up_case3_1.png&quot; alt=&quot;operation 6'&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;/assets/redblacktree/delete_fix_up_case4.png&quot; alt=&quot;operation 7&quot; /&gt; &lt;img src=&quot;/assets/redblacktree/delete_fix_up_case4_1.png&quot; alt=&quot;operation 7'&quot; /&gt;&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;RB-DELETE-FIXUP(T,x)
+    while x != T.root and x.color == BLACK
+        if x == x.p.left
+            w = x.p.right
+            if w.color == RED       // case 1
+                w.color = BLACK
+                x.p.color = RED     // case 1
+                LEFT-ROTATE(T,x.p)
+                w = x.p.right
+            if w.left.color == BLACK and w.right.color == BLACK 
+                w.color = RED
+                x = x.p             // case 2
+            else if w.right.color == BLACK      // case 3
+                    w.left.color = BLACK
+                    w.color = RED
+                    RIGHT-ROTATE(T,w)
+                    w = x.p.right
+                w.color = x.p.color             // case 4
+                x.p.color = BLACK
+                w.right.color = BLACK
+                LEFT-ROTATE(T,x.p)
+                x = T.root
+        else                        // 此时x是右节点
+            w = x.p.left
+            if w.color == RED       // case 1'
+                w.color = BLACK     // 互换颜色
+                x.p.color = RED     // case 1'
+                RIGHT-ROTATE(T,x.p)
+                w = x.p.left
+            if w.left.color == BLACK and w.right.color == BLACK
+                w.color = RED
+                x = x.p             // case 2'
+            else if w.left.color == BLACK       // case 3'
+                    w.right.color = BLACK
+                    w.color = RED
+                    LEFT-ROTATE(T,w)
+                    w = x.p.left
+               w.color = x.p.color          // case 4'
+               x.p.color = BLACK
+               w.left.color = BLACK
+               RIGHT-ROTATE(T,x.p)
+               x = T.root                   // terminate
+
+        x.color = BLACK                     // set root to BLACK
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;分析
+只有情形2会造成whilte循环重入,并且整个删除周期最多只会做三次旋转，对于有n个内部节点的树来说，树高最多为O(lgn)，于是删除时间最多为O(lgn)。&lt;/p&gt;
+
+&lt;h2 id=&quot;代码&quot;&gt;代码&lt;/h2&gt;
+&lt;pre&gt;&lt;code&gt;#ifndef __RED_BLACK_TREE_H__
+#define __RED_BLACK_TREE_H__ 1
+#include &amp;lt;iostream&amp;gt;
+#include &amp;lt;queue&amp;gt;
+
+const int RED = 0;
+const int BLACK = 1;
+const int BLACK_BLACK= 3;
+const int BLACK_RED = 4;
+template&amp;lt;class T&amp;gt;
+class BinNode
+{
+public:
+    BinNode (const T&amp;amp; data)
+        :_data(data)
+    {
+        _color = BLACK;
+        _lc = NULL;
+        _rc = NULL;
+        _p = NULL;
+    }
+    virtual ~BinNode (){}
+
+    int &amp;amp; color() {return _color;}
+    BinNode*&amp;amp; lc(){return _lc;}
+    BinNode*&amp;amp; rc(){return _rc;}
+    BinNode*&amp;amp; p(){return _p;}
+
+    T&amp;amp; data(){return _data;}
+
+private:
+private:
+    /* data */
+    int _color;
+    BinNode* _lc;
+    BinNode* _rc;
+    BinNode* _p;
+    T _data;
+};
+
+template&amp;lt;class T&amp;gt;
+class BinTree
+{
+    public:
+
+        static BinNode&amp;lt;T&amp;gt;* nil;
+    public:
+        BinTree()
+        {
+            _root = nil;
+        }
+        void insert(BinNode&amp;lt;T&amp;gt;* node);
+        BinNode&amp;lt;T&amp;gt;* search(const T &amp;amp; t) const;
+
+        void deletenode(BinNode&amp;lt;T&amp;gt;* z);
+        void dfs();
+        void bfs();
+        BinNode&amp;lt;T&amp;gt;* root(){return _root;}
+        void LeftRotate(BinNode&amp;lt;T&amp;gt;* x) {left_rotate(x);}
+        void RightRotate(BinNode&amp;lt;T&amp;gt;* x){right_rotate(x);}
+
+    private:
+        BinNode&amp;lt;T&amp;gt;* search_recur(BinNode&amp;lt;T&amp;gt;* node, const T&amp;amp; t) const;
+        void insert_fixup(BinNode&amp;lt;T&amp;gt;* node);
+        void left_rotate(BinNode&amp;lt;T&amp;gt;* x);
+        void right_rotate(BinNode&amp;lt;T&amp;gt;* x);
+        void transplant(BinNode&amp;lt;T&amp;gt;* u, BinNode&amp;lt;T&amp;gt;* v);
+        BinNode&amp;lt;T&amp;gt;* minimum(BinNode&amp;lt;T&amp;gt;* node);
+
+        void delete_fixup(BinNode&amp;lt;T&amp;gt;* x);
+
+        void dfs_recur(BinNode&amp;lt;T&amp;gt;* node);
+        
+    private:
+        BinNode&amp;lt;T&amp;gt;* _root;
+    public:
+        static BinNode&amp;lt;T&amp;gt;* make_node(const T&amp;amp; t)
+        {
+            BinNode&amp;lt;T&amp;gt;* node = new BinNode&amp;lt;T&amp;gt;(t);
+            node-&amp;gt;color() = RED;
+
+            node-&amp;gt;lc() = nil;
+            node-&amp;gt;rc() = nil;
+            node-&amp;gt;p() = nil;
+
+            return node;
+        }
+
+};
+
+
+template&amp;lt;class T&amp;gt;
+BinNode&amp;lt;T&amp;gt;* BinTree&amp;lt;T&amp;gt;::nil = new BinNode&amp;lt;T&amp;gt;(-1);
+
+template&amp;lt;class T&amp;gt;
+BinNode&amp;lt;T&amp;gt;* BinTree&amp;lt;T&amp;gt;::search(const T&amp;amp; t) const
+{
+    return search_recur(_root, t);
+}
+template&amp;lt;class T&amp;gt;
+BinNode&amp;lt;T&amp;gt;* BinTree&amp;lt;T&amp;gt;::search_recur(BinNode&amp;lt;T&amp;gt;* node, const T&amp;amp; t) const
+{
+    if(node == nil) return nil;
+    if(node-&amp;gt;data() == t) return node;
+    if(node-&amp;gt;data() &amp;lt; t)
+    {
+        return search_recur(node-&amp;gt;rc(),t);
+    }
+    if (node-&amp;gt;data() &amp;gt; t)
+    {
+        return search_recur(node-&amp;gt;lc(),t);
+    }
+    return nil;
+
+}
+template&amp;lt;class T&amp;gt;
+void BinTree&amp;lt;T&amp;gt;::dfs()
+{
+    dfs_recur(_root);
+}
+static const char* getColor(int color)
+{
+    if (color == RED)
+    {
+        return &quot;red&quot;;
+    }
+    else if(color == BLACK)
+    {
+        return &quot;black&quot;;
+    }
+    else if(color == BLACK_BLACK)
+    {
+        return &quot;black_black&quot;;
+    }
+    else if(color == BLACK_RED)
+    {
+        return &quot;black_red&quot;;
+    }
+    return &quot;&quot;;
+}
+template &amp;lt;class T&amp;gt;
+void BinTree&amp;lt;T&amp;gt;::bfs()
+{
+    if (_root == nil) return;
+    std::queue&amp;lt;BinNode&amp;lt;T&amp;gt;* &amp;gt; q;
+    q.push(_root);
+    int cur = 1;
+    int next =0;
+    while(q.size() &amp;gt; 0)
+    {
+        BinNode&amp;lt;T&amp;gt;* node = q.front();
+
+        q.pop();
+        std::cout&amp;lt;&amp;lt;node-&amp;gt;data() &amp;lt;&amp;lt; &quot; &quot;&amp;lt;&amp;lt;getColor(node-&amp;gt;color())&amp;lt;&amp;lt;&quot;    &quot;;
+
+
+        if(node-&amp;gt;lc() != NULL)
+        {
+            q.push(node-&amp;gt;lc());
+            next ++;
+        }
+        if(node-&amp;gt;rc() != NULL)
+        {
+            q.push(node-&amp;gt;rc());
+            next += 1;
+        }
+
+        cur--;
+        if(cur &amp;lt;=0)
+        {
+            std::cout&amp;lt;&amp;lt;std::endl;
+            cur = next;
+            next = 0;
+        }
+    }
+    std::cout&amp;lt;&amp;lt;std::endl;
+}
+
+    template&amp;lt;class T&amp;gt;
+void BinTree&amp;lt;T&amp;gt;::dfs_recur(BinNode&amp;lt;T&amp;gt;* node)
+{
+    if(node-&amp;gt;lc() != nil)
+    {
+        dfs_recur(node-&amp;gt;lc());
+    }
+    if(node-&amp;gt;rc() != nil)
+    {
+        dfs_recur(node-&amp;gt;rc());
+    }
+    std::cout&amp;lt;&amp;lt;&quot; &quot;&amp;lt;&amp;lt;node-&amp;gt;data()&amp;lt;&amp;lt;&quot; &quot;;
+}
+
+    template&amp;lt;class T&amp;gt;
+BinNode&amp;lt;T&amp;gt;* BinTree&amp;lt;T&amp;gt;::minimum(BinNode&amp;lt;T&amp;gt;* node)
+{
+
+    while(node-&amp;gt;lc() != nil)
+    {
+        node = node-&amp;gt;lc();
+    }
+    return node;
+
+
+}
+
+    template&amp;lt;class T&amp;gt;
+void BinTree&amp;lt;T&amp;gt;::transplant(BinNode&amp;lt;T&amp;gt;* u, BinNode&amp;lt;T&amp;gt;* v)
+{
+    if(u-&amp;gt;p() == nil)
+    {
+        _root = v;
+    }
+    else if(u == u-&amp;gt;p()-&amp;gt;lc())
+    {
+        u-&amp;gt;p()-&amp;gt;lc() = v;
+    }
+    else
+    {
+        u-&amp;gt;p()-&amp;gt;rc() = v;
+    }
+    v-&amp;gt;p() = u-&amp;gt;p();
+}
+    template&amp;lt;class T&amp;gt;
+void BinTree&amp;lt;T&amp;gt;::deletenode(BinNode&amp;lt;T&amp;gt;* z)
+{
+    BinNode&amp;lt;T&amp;gt;* y = z;
+    BinNode&amp;lt;T&amp;gt;* x= nil;
+    int y_original_color = y-&amp;gt;color();
+    if (z-&amp;gt;lc() == nil)
+    {
+        x = z-&amp;gt;rc();
+        transplant(z,z-&amp;gt;rc());
+    }
+    else if(z-&amp;gt;rc() == nil)
+    {
+        x = z-&amp;gt;lc();
+        transplant(z,z-&amp;gt;lc());
+    }
+    else
+    {
+        y = minimum(z-&amp;gt;rc());
+        y_original_color = y-&amp;gt;color();
+        x = y-&amp;gt;rc();
+        if(y-&amp;gt;p() == z)
+        {
+            x-&amp;gt;p() = y;
+        }
+        else
+        {
+            transplant(y,y-&amp;gt;rc());
+            y-&amp;gt;rc() = z-&amp;gt;rc();
+            y-&amp;gt;rc()-&amp;gt;p() = y;
+        }
+        transplant(z,y);
+        y-&amp;gt;lc() = z-&amp;gt;lc();
+        y-&amp;gt;lc()-&amp;gt;p() = y;
+        y-&amp;gt;color() = z-&amp;gt;color();
+    }
+    if(y_original_color == BLACK)
+    {
+        std::cout&amp;lt;&amp;lt;&quot;delete_fixup &quot;&amp;lt;&amp;lt;x-&amp;gt;data()&amp;lt;&amp;lt;std::endl;
+        delete_fixup(x);
+    }
+
+}
+
+    template&amp;lt;class T&amp;gt;
+void BinTree&amp;lt;T&amp;gt;::delete_fixup(BinNode&amp;lt;T&amp;gt;* x)
+{
+    BinNode&amp;lt;T&amp;gt; * w;
+    while( x != _root &amp;amp;&amp;amp; x-&amp;gt;color() == BLACK)
+    {
+        if(x == x-&amp;gt;p()-&amp;gt;lc())
+        {
+            w = x-&amp;gt;p()-&amp;gt;rc();
+            if(w-&amp;gt;color() == RED) // case 1
+            {
+                w-&amp;gt;color() = BLACK;
+                x-&amp;gt;p()-&amp;gt;color() = BLACK;
+                left_rotate(x-&amp;gt;p());
+                w = x-&amp;gt;p()-&amp;gt;rc();
+            }
+            if(w-&amp;gt;lc()-&amp;gt;color() == BLACK &amp;amp;&amp;amp; w-&amp;gt;rc()-&amp;gt;color() == BLACK)
+            {
+                w-&amp;gt;color() = RED;
+                x = x-&amp;gt;p();
+            }
+            else
+            {
+                if(w-&amp;gt;rc()-&amp;gt;color() == BLACK)
+                {
+                    w-&amp;gt;lc()-&amp;gt;color() = BLACK;
+                    w-&amp;gt;color() = RED;
+                    right_rotate(w);
+                    w = x-&amp;gt;p()-&amp;gt;rc();
+                }
+                w-&amp;gt;color() = x-&amp;gt;p()-&amp;gt;color();
+                x-&amp;gt;p()-&amp;gt;color()  = BLACK;
+                w-&amp;gt;rc()-&amp;gt;color() = BLACK;
+                left_rotate(x-&amp;gt;p());
+                x = _root;
+            }
+        }
+        else
+        {
+            w = x-&amp;gt;p()-&amp;gt;lc();
+            if(w-&amp;gt;color() == RED)
+            {
+                w-&amp;gt;color() = BLACK;
+                x-&amp;gt;p()-&amp;gt;color() = RED;
+                right_rotate(x-&amp;gt;p());
+                w = x-&amp;gt;p()-&amp;gt;lc();
+            }
+            if(w-&amp;gt;lc()-&amp;gt;color() == BLACK &amp;amp;&amp;amp; w-&amp;gt;rc()-&amp;gt;color() == BLACK)
+            {
+                w-&amp;gt;color() = RED;
+                x = x-&amp;gt;p();
+            }
+            else
+            {
+                if(w-&amp;gt;lc()-&amp;gt;color() == BLACK)
+                {
+                    w-&amp;gt;rc()-&amp;gt;color() = BLACK;
+                    w-&amp;gt;color() = RED;
+                    left_rotate(w);
+                    w = x-&amp;gt;p()-&amp;gt;lc();
+                }
+                w-&amp;gt;color() = x-&amp;gt;p()-&amp;gt;color();
+                x-&amp;gt;p()-&amp;gt;color() = BLACK;
+                w-&amp;gt;lc()-&amp;gt;color() = BLACK;
+                right_rotate(x-&amp;gt;p());
+                x = _root;
+            }
+        }
+    }
+    x-&amp;gt;color() =BLACK;
+}
+    template&amp;lt;class T&amp;gt;
+void BinTree&amp;lt;T&amp;gt;::left_rotate(BinNode&amp;lt;T&amp;gt;* x)
+{
+    BinNode&amp;lt;T&amp;gt;* y = x-&amp;gt;rc();
+    x-&amp;gt;rc() = y-&amp;gt;lc();
+    if(y-&amp;gt;lc() != nil)
+    {
+        y-&amp;gt;lc()-&amp;gt;p() = x;
+    }
+    y-&amp;gt;p() = x-&amp;gt;p();
+    if(x-&amp;gt;p() == nil)
+    {
+        _root = y;
+    }
+    else if (x == x-&amp;gt;p()-&amp;gt;lc())
+    {
+        x-&amp;gt;p()-&amp;gt;lc() = y;
+    }
+    else if(x == x-&amp;gt;p()-&amp;gt;rc())
+    {
+        x-&amp;gt;p()-&amp;gt;rc() = y;
+    }
+    y-&amp;gt;lc() = x;
+    x-&amp;gt;p() = y;
+}
+template&amp;lt;class T&amp;gt;
+void BinTree&amp;lt;T&amp;gt;::right_rotate(BinNode&amp;lt;T&amp;gt;* y)
+{
+
+    BinNode&amp;lt;T&amp;gt;* x = y-&amp;gt;lc();
+    y-&amp;gt;lc()  = x-&amp;gt;rc();
+    if(x-&amp;gt;rc() != nil)
+    {
+        x-&amp;gt;rc()-&amp;gt;p() = y;
+    }
+    x-&amp;gt;p() = y-&amp;gt;p();
+    if(y-&amp;gt;p() == nil)
+    {
+        _root = x;
+    }
+    else if(y == y-&amp;gt;p()-&amp;gt;lc())
+    {
+        y-&amp;gt;p()-&amp;gt;lc() = x;
+    }
+    else if(y == y-&amp;gt;p()-&amp;gt;rc())
+    {
+        y-&amp;gt;p()-&amp;gt;rc() =x;
+    }
+    x -&amp;gt;rc() = y;
+    y-&amp;gt;p() = x;
+}
+    template&amp;lt;class T&amp;gt;
+void BinTree&amp;lt;T&amp;gt;::insert_fixup(BinNode&amp;lt;T&amp;gt;* z)
+{
+    BinNode&amp;lt;T&amp;gt;* y;
+    while(z-&amp;gt;p()-&amp;gt;color() == RED)
+    {
+        if(z-&amp;gt;p() == z-&amp;gt;p()-&amp;gt;p()-&amp;gt;lc())
+        {
+            y = z-&amp;gt;p()-&amp;gt;p()-&amp;gt;rc();
+            if (y-&amp;gt;color() == RED)
+            {
+                z-&amp;gt;p()-&amp;gt;color() = BLACK;
+                y-&amp;gt;color() = BLACK;
+                z-&amp;gt;p()-&amp;gt;p()-&amp;gt;color() = RED;
+                z = z-&amp;gt;p()-&amp;gt;p();
+            }
+            else
+            {
+                if(z == z-&amp;gt;p()-&amp;gt;rc())
+                {
+                    z = z-&amp;gt;p();
+                    left_rotate(z);
+                }
+                z-&amp;gt;p()-&amp;gt;color() = BLACK;
+                z-&amp;gt;p()-&amp;gt;p()-&amp;gt;color() = RED;
+                right_rotate(z-&amp;gt;p()-&amp;gt;p());
+            }
+        }
+        else
+        {
+            //std::cout&amp;lt;&amp;lt;&quot;case 2'&quot;&amp;lt;&amp;lt;std::endl;
+            y = z-&amp;gt;p()-&amp;gt;p()-&amp;gt;lc();
+            if (y -&amp;gt;color() == RED)
+            {
+                z-&amp;gt;p()-&amp;gt;color() = BLACK;
+                y-&amp;gt;color() = BLACK;
+                z-&amp;gt;p()-&amp;gt;p()-&amp;gt;color() = RED;
+                z = z-&amp;gt;p()-&amp;gt;p();
+            }
+            else
+            {
+                if (z == z-&amp;gt;p()-&amp;gt;lc())
+                {
+                    z = z-&amp;gt;p();
+                    right_rotate(z);
+                    //std::cout&amp;lt;&amp;lt;&quot;right_rotate for case 2&quot;&amp;lt;&amp;lt;std::endl;
+                    //bfs();
+                }
+                z-&amp;gt;p()-&amp;gt;color() = BLACK;
+                z-&amp;gt;p()-&amp;gt;p()-&amp;gt;color() = RED;
+                left_rotate(z-&amp;gt;p()-&amp;gt;p());
+            }
+        }
+    }
+    _root-&amp;gt;color() = BLACK;
+}
+
+    template&amp;lt;class T&amp;gt;
+void BinTree&amp;lt;T&amp;gt;::insert(BinNode&amp;lt;T&amp;gt;* node)
+{
+    BinNode&amp;lt;T&amp;gt;* y = nil;
+    BinNode&amp;lt;T&amp;gt;* x= _root;;
+    while (x != nil)
+    {
+        y = x;
+        if(node-&amp;gt;data() &amp;lt; x-&amp;gt;data())
+        {
+            x = x-&amp;gt;lc();
+        }
+        else
+        {
+            x = x-&amp;gt;rc();
+        }
+    }
+    node-&amp;gt;p() = y;
+    if (y == nil )
+    {
+        _root = node;
+    }
+    else if(node-&amp;gt;data() &amp;lt; y-&amp;gt;data())
+    {
+        y-&amp;gt;lc() = node;
+    }
+    else
+    {
+        y-&amp;gt;rc() = node;
+    }
+    node-&amp;gt;lc() = nil;
+    node-&amp;gt;rc() = nil;
+    node-&amp;gt;color() = RED;
+    //std::cout&amp;lt;&amp;lt;&quot;before insert_fixup &quot;&amp;lt;&amp;lt;std::endl;
+    //bfs();
+    //std::cout&amp;lt;&amp;lt;&quot;===================&quot;&amp;lt;&amp;lt;std::endl;
+    insert_fixup(node);
+}
+
+
+#endif /* ifndef __RED_BLACK_TREE_H__*/
+&lt;/code&gt;&lt;/pre&gt;
+</content>
+ </entry>
+ 
+
+</feed>
