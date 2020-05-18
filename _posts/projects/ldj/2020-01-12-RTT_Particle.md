@@ -1,7 +1,8 @@
 ---
 layout: post
 title : Particle System rendered on Unity RT Image
-categories: [projects, ldj]
+categories: [项目]
+tags: [ldj]
 excerpt_separator: <!--more-->
 ---
 
