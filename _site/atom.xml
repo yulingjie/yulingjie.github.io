@@ -4,7 +4,7 @@
  <title>只砖片瓦</title>
  <link href="http://localhost:4001/atom.xml" rel="self"/>
  <link href="http://localhost:4001/"/>
- <updated>2020-05-19T09:35:02+08:00</updated>
+ <updated>2020-05-19T09:51:59+08:00</updated>
  <id>http://localhost:4001</id>
  <author>
    <name></name>
@@ -1412,10 +1412,10 @@ class IntervalTree:public BinTree&amp;lt;int,IntervalNode&amp;gt;
    <link href="http://localhost:4001/2020/01/04/faststringsearch"/>
    <updated>2020-01-04T00:00:00+08:00</updated>
    <id>http://localhost:4001/2020/01/04/faststringsearch</id>
-   <content type="html">&lt;p&gt;本文目的在于读论文&lt;a href=&quot;https://www.cs.utexas.edu/users/moore/publications/fstrpos.pdf&quot;&gt;“A Fast String Searching Algorithm”&lt;/a&gt;&lt;/p&gt;
+   <content type="html">&lt;p&gt;本文目的在于读论文&lt;a href=&quot;https://www.cs.utexas.edu/users/moore/publications/fstrpos.pdf&quot;&gt;“A Fast String Searching Algorithm”&lt;/a&gt;,一些读后感。&lt;/p&gt;
 
 &lt;!--more--&gt;
-
+&lt;h3 id=&quot;bm算法&quot;&gt;BM算法&lt;/h3&gt;
 &lt;p&gt;字符串string
 匹配串P，长度patlen。
 对字符串T和匹配串P进行匹配，如果自右向左进行匹配，而不是自左向右，有如下观察：&lt;/p&gt;

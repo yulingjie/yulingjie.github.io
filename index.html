@@ -6,9 +6,9 @@ layout: default
 <ul>
 {% for post in site.posts %}
 <div class="entry-inner">
-<li><h3 href="{{ site.baseurl }}{{ post.url }}" class="entry-header">{{ post.title }}</h3><time datetime="{{ post.date | date_to_xmlschema }}">{{ post.date | date: "%m-%d-%Y" }}</time>
+<li><a href="{{ site.baseurl }}{{ post.url }}" class="entry-header">{{ post.title }}</a><time datetime="{{ post.date | date_to_xmlschema }}">{{ post.date | date: "%m-%d-%Y" }}</time>
 </li>
-<div class="entry-content">	{{ post.excerpt }} </div>
+<!--<div class="entry-content">	{{ post.excerpt }} </div>-->
 </div>
 
 
