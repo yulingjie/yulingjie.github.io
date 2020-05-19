@@ -8,7 +8,6 @@ excerpt_seperator: <!--more-->
 
 本文目的在于研究BM算法的大概思路。
 
-<!--more-->
 
 ### BM算法
 字符串string
@@ -269,4 +268,4 @@ int match(const char* txt, int txtLen, const char* pat, int patlen)
 ## 附
 在 "Knuth D.E. Morris J.H., and Pratt, V.R. Fast pattern matching in strings"中Knuth提出了线性时间
 构造delta2的方法。
-参考论文["A Fast String Searching Algorithm"](https://www.cs.utexas.edu/users/moore/publications/fstrpos.pdf),
+参考论文["A Fast String Searching Algorithm"](https://www.cs.utexas.edu/users/moore/publications/fstrpos.pdf)
