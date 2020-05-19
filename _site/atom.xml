@@ -2,10 +2,10 @@
 <feed xmlns="http://www.w3.org/2005/Atom">
 
  <title>只砖片瓦</title>
- <link href="http://localhost:4000/atom.xml" rel="self"/>
- <link href="http://localhost:4000/"/>
- <updated>2020-05-18T23:46:30+08:00</updated>
- <id>http://localhost:4000</id>
+ <link href="http://localhost:4001/atom.xml" rel="self"/>
+ <link href="http://localhost:4001/"/>
+ <updated>2020-05-19T09:31:09+08:00</updated>
+ <id>http://localhost:4001</id>
  <author>
    <name></name>
    <email>lingjiey@gmail.com</email>
@@ -14,9 +14,9 @@
  
  <entry>
    <title>C.Sereja and Brackets</title>
-   <link href="http://localhost:4000/2020/01/19/sereja-and-brackets"/>
+   <link href="http://localhost:4001/2020/01/19/sereja-and-brackets"/>
    <updated>2020-01-19T00:00:00+08:00</updated>
-   <id>http://localhost:4000/2020/01/19/Sereja_and_Brackets</id>
+   <id>http://localhost:4001/2020/01/19/Sereja_and_Brackets</id>
    <content type="html">&lt;p&gt;趁热打铁，深入理解segment tree算法。参考文章&lt;a href=&quot;https://codeforces.com/blog/entry/15890&quot;&gt;链接&lt;/a&gt;。&lt;/p&gt;
 
 &lt;h2 id=&quot;问题描述&quot;&gt;问题描述&lt;/h2&gt;
@@ -140,9 +140,9 @@ node segment(int x, int y,int id=1, int l =0, int r = n)
  
  <entry>
    <title>segment tree</title>
-   <link href="http://localhost:4000/2020/01/16/segmenttree"/>
+   <link href="http://localhost:4001/2020/01/16/segmenttree"/>
    <updated>2020-01-16T00:00:00+08:00</updated>
-   <id>http://localhost:4000/2020/01/16/segmenttree</id>
+   <id>http://localhost:4001/2020/01/16/segmenttree</id>
    <content type="html">&lt;p&gt;本文的目的，归纳整理segment tree这个数据结构的使用。参考codeforces的&lt;a href=&quot;https://codeforces.com/blog/entry/15729&quot;&gt;链接
 1&lt;/a&gt;和&lt;a href=&quot;https://codeforces.com/blog/entry/18051&quot;&gt;链接2&lt;/a&gt;以及&lt;a href=&quot;https://codeforces.com/blog/entry/15890&quot;&gt;链接3&lt;/a&gt;。&lt;/p&gt;
 
@@ -461,9 +461,9 @@ int sum(int x,int y, int id = 1, int l = 0,  int r = n)
  
  <entry>
    <title>Particle System rendered on Unity RT Image</title>
-   <link href="http://localhost:4000/2020/01/12/rtt-particle"/>
+   <link href="http://localhost:4001/2020/01/12/rtt-particle"/>
    <updated>2020-01-12T00:00:00+08:00</updated>
-   <id>http://localhost:4000/2020/01/12/RTT_Particle</id>
+   <id>http://localhost:4001/2020/01/12/RTT_Particle</id>
    <content type="html">&lt;p&gt;本文目的: 对于项目中遇到的的在RT上显示特效的问题进行总结。&lt;/p&gt;
 
 &lt;!--more--&gt;
@@ -673,9 +673,9 @@ Category {
  
  <entry>
    <title>interval trees</title>
-   <link href="http://localhost:4000/2020/01/05/intervaltree"/>
+   <link href="http://localhost:4001/2020/01/05/intervaltree"/>
    <updated>2020-01-05T00:00:00+08:00</updated>
-   <id>http://localhost:4000/2020/01/05/intervaltree</id>
+   <id>http://localhost:4001/2020/01/05/intervaltree</id>
    <content type="html">&lt;p&gt;本文目的： 研究interval trees来加深对红黑树的理解。&lt;/p&gt;
 
 &lt;!--more--&gt;
@@ -1409,9 +1409,9 @@ class IntervalTree:public BinTree&amp;lt;int,IntervalNode&amp;gt;
  
  <entry>
    <title>BM算法（字符串快速匹配算法）</title>
-   <link href="http://localhost:4000/2020/01/04/faststringsearch"/>
+   <link href="http://localhost:4001/2020/01/04/faststringsearch"/>
    <updated>2020-01-04T00:00:00+08:00</updated>
-   <id>http://localhost:4000/2020/01/04/faststringsearch</id>
+   <id>http://localhost:4001/2020/01/04/faststringsearch</id>
    <content type="html">&lt;p&gt;本文目的在于读论文&lt;a href=&quot;https://www.cs.utexas.edu/users/moore/publications/fstrpos.pdf&quot;&gt;“A Fast String Searching Algorithm”&lt;/a&gt;&lt;/p&gt;
 
 &lt;!--more--&gt;
@@ -1679,9 +1679,9 @@ int match(const char* txt, int txtLen, const char* pat, int patlen)
  
  <entry>
    <title>红黑树</title>
-   <link href="http://localhost:4000/2020/01/03/redblacktre"/>
+   <link href="http://localhost:4001/2020/01/03/redblacktre"/>
    <updated>2020-01-03T00:00:00+08:00</updated>
-   <id>http://localhost:4000/2020/01/03/redblacktre</id>
+   <id>http://localhost:4001/2020/01/03/redblacktre</id>
    <content type="html">&lt;p&gt;本篇文章的目的，学习红黑树。使用教材，”Introduction to Algorithms 3rd”。&lt;/p&gt;
 
 &lt;!--more--&gt;
