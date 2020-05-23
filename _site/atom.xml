@@ -2,10 +2,10 @@
 <feed xmlns="http://www.w3.org/2005/Atom">
 
  <title>只砖片瓦</title>
- <link href="http://localhost:4001/atom.xml" rel="self"/>
- <link href="http://localhost:4001/"/>
- <updated>2020-05-19T09:51:59+08:00</updated>
- <id>http://localhost:4001</id>
+ <link href="http://localhost:4000/atom.xml" rel="self"/>
+ <link href="http://localhost:4000/"/>
+ <updated>2020-05-23T08:27:28+08:00</updated>
+ <id>http://localhost:4000</id>
  <author>
    <name></name>
    <email>lingjiey@gmail.com</email>
@@ -13,10 +13,187 @@
 
  
  <entry>
+   <title>unity_ugui_particle</title>
+   <link href="http://localhost:4000/2020/05/22/unity-ugui-particle"/>
+   <updated>2020-05-22T00:00:00+08:00</updated>
+   <id>http://localhost:4000/2020/05/22/unity_ugui_particle</id>
+   <content type="html">&lt;p&gt;最近在整理以前的代码，看到以前使用UGUI刷新ParticleSystem的一些代码，稍微整理下了。&lt;/p&gt;
+
+&lt;!--more--&gt;
+
+&lt;h2 id=&quot;背景&quot;&gt;背景&lt;/h2&gt;
+
+&lt;p&gt;主要是，制作UI的时候，会遇到一些游戏UI上特效层级遮挡关系，UGUI这边传统的做法无非canvas，sort layer+sort order, z值修改，略微麻烦，所以在考虑有没有更好点的方法，
+当时写下了这个方法，现在回首看看，还是有些问题的。&lt;/p&gt;
+
+&lt;h2 id=&quot;源码&quot;&gt;源码&lt;/h2&gt;
+&lt;pre&gt;&lt;code&gt;using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+using UnityEngine;
+using UnityEngine.UI;
+
+[ExecuteInEditMode]
+class UIBillboardParticle : Graphic
+{
+    private Canvas _canvas;
+    private ParticleSystem _pSystem;
+    private ParticleSystemRenderer _pRenderer;
+    private ParticleSystem.Particle[] _particles;
+    private Mesh _mesh;
+    private Texture _curTexture;
+    private UIVertex[] _quad = new UIVertex[4];
+    protected override void Awake()
+    {
+        base.Awake();
+        _canvas = MaskUtilities.FindRootSortOverrideCanvas(transform).GetComponent&amp;lt;Canvas&amp;gt;();
+        _pSystem = GetComponentInChildren&amp;lt;ParticleSystem&amp;gt;();
+        _pRenderer = _pSystem.GetComponent&amp;lt;ParticleSystemRenderer&amp;gt;();
+        if (_pRenderer != null)
+        {
+            _pRenderer.enabled = false;
+        }
+        var mat = _pRenderer.sharedMaterial;
+        material = mat;
+        _curTexture = mat.mainTexture;
+        _particles = new ParticleSystem.Particle[_pSystem.main.maxParticles];
+        _mesh = _pRenderer.mesh;
+    }
+    public override Texture mainTexture
+    {
+        get
+        {
+            return _curTexture;
+        }
+    }
+
+    protected override void OnPopulateMesh(VertexHelper vh)
+    {
+        vh.Clear();
+
+        int count = _pSystem.GetParticles(_particles);
+
+        for (int i = 0; i &amp;lt; count; ++i)
+        {
+            var particle = _particles[i];
+            // transfer position to object space
+            Vector3 position = Vector3.zero;
+            if (_pSystem.main.simulationSpace == ParticleSystemSimulationSpace.Local)
+            {
+                position = particle.position;
+            }
+            else if (_pSystem.main.simulationSpace == ParticleSystemSimulationSpace.World)
+            {
+                position = transform.InverseTransformPoint(particle.position);
+            }
+
+
+            /// calculate correct scale factor
+            Vector3 scaleFactor = Vector3.one;
+
+            if (_pSystem.main.scalingMode == ParticleSystemScalingMode.Local)
+            {
+                scaleFactor.x /= _canvas.transform.localScale.x;
+                scaleFactor.y /= _canvas.transform.localScale.y;
+                scaleFactor.z /= _canvas.transform.localScale.z;
+            }
+
+            position.x *= scaleFactor.x;
+            position.y *= scaleFactor.y;
+            var size = particle.GetCurrentSize3D(_pSystem) * 0.5f;
+            size.x *= scaleFactor.x;
+            size.y *= scaleFactor.y;
+            size.z = 0f;
+
+            Color32 color = particle.GetCurrentColor(_pSystem);
+            var uv = new Vector4(0, 0, 1, 1);
+            _quad[0] = UIVertex.simpleVert;
+            _quad[0].color = color;
+            _quad[0].uv0 = new Vector2(0, 0);
+
+            _quad[1] = UIVertex.simpleVert;
+            _quad[1].color = color;
+            _quad[1].uv0 = new Vector2(0, 1);
+
+            _quad[2] = UIVertex.simpleVert;
+            _quad[2].color = color;
+            _quad[2].uv0 = new Vector2(1, 1);
+
+            _quad[3] = UIVertex.simpleVert;
+            _quad[3].color = color;
+            _quad[3].uv0 = new Vector2(1, 0);
+
+            var corner1 = position - size;
+            var corner2 = position + size;
+            
+            _quad[0].position = new Vector2(corner1.x, corner1.y);
+            _quad[1].position = new Vector2(corner1.x, corner2.y);
+            _quad[2].position = new Vector2(corner2.x,corner2.y);
+            _quad[3].position = new Vector2(corner2.x, corner1.y);
+            vh.AddUIVertexQuad(_quad);
+        }
+    }
+    void Update()
+    {
+
+        _pSystem.Simulate(Time.unscaledDeltaTime, false, false, true);
+        SetVerticesDirty();
+        //SetAllDirty();
+    }
+}
+
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;大体思路就是讲粒子面片刷到UI中去，使用canvasrender进行渲染，这样做的确可以方便UI的层级调整。&lt;/p&gt;
+&lt;h2 id=&quot;问题&quot;&gt;问题&lt;/h2&gt;
+
+&lt;p&gt;问题主要还是出在效率上面吧，未来让OnPopulatedMesh每一帧被调用，于是Update中必须每一帧去SetVerticesDirty，导致Canvas的重新构建。
+&lt;img src=&quot;assets/ugui_particlesystem/2020-05-23-080746.png&quot; alt=&quot;non_script&quot; /&gt;
+可以看到，此时使用1000个粒子的效率。
+然后我们使用脚本的方法看下1000个粒子的效率：
+&lt;img src=&quot;assets/ugui_particlesystem/2020-05-23-081126.png&quot; alt=&quot;with_script&quot; /&gt;
+可以看到，PostLateUpdate.PlayerUpdateCanvases这里会有额外消耗。&lt;/p&gt;
+&lt;h2 id=&quot;消耗解析&quot;&gt;消耗解析&lt;/h2&gt;
+
+&lt;p&gt;这里需要找下UGUI源码，定位到Graphics-&amp;gt;Rebuild&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;  public virtual void Rebuild(CanvasUpdate update)
+        {
+            if (canvasRenderer == null || canvasRenderer.cull)
+                return;
+
+            switch (update)
+            {
+                case CanvasUpdate.PreRender:
+                    if (m_VertsDirty)
+                    {
+                        UpdateGeometry();
+                        m_VertsDirty = false;
+                    }
+                    if (m_MaterialDirty)
+                    {
+                        UpdateMaterial();
+                        m_MaterialDirty = false;
+                    }
+                    break;
+            }
+        }
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;我们可以看到这里每一帧我们都需要UpdateGeometry，而这的确是我们的消耗大头。
+最终代码定位到&lt;code&gt;canvasRender.SetMesh()&lt;/code&gt;，接下来看不到源码了，没什么好的优化想法。&lt;/p&gt;
+
+&lt;h2 id=&quot;猜想&quot;&gt;猜想&lt;/h2&gt;
+&lt;p&gt;理论上这里知识构建一个简单的Mesh，然后去模拟粒子效果，当然，这里需要每一帧去创建Mesh，相比
+粒子原来的Mesh变换会慢一定，但问题定位目前县搁置吧，以后有机会看到源码再研究下。&lt;/p&gt;
+
+</content>
+ </entry>
+ 
+ <entry>
    <title>C.Sereja and Brackets</title>
-   <link href="http://localhost:4001/2020/01/19/sereja-and-brackets"/>
+   <link href="http://localhost:4000/2020/01/19/sereja-and-brackets"/>
    <updated>2020-01-19T00:00:00+08:00</updated>
-   <id>http://localhost:4001/2020/01/19/Sereja_and_Brackets</id>
+   <id>http://localhost:4000/2020/01/19/Sereja_and_Brackets</id>
    <content type="html">&lt;p&gt;趁热打铁，深入理解segment tree算法。参考文章&lt;a href=&quot;https://codeforces.com/blog/entry/15890&quot;&gt;链接&lt;/a&gt;。&lt;/p&gt;
 
 &lt;h2 id=&quot;问题描述&quot;&gt;问题描述&lt;/h2&gt;
@@ -140,9 +317,9 @@ node segment(int x, int y,int id=1, int l =0, int r = n)
  
  <entry>
    <title>segment tree</title>
-   <link href="http://localhost:4001/2020/01/16/segmenttree"/>
+   <link href="http://localhost:4000/2020/01/16/segmenttree"/>
    <updated>2020-01-16T00:00:00+08:00</updated>
-   <id>http://localhost:4001/2020/01/16/segmenttree</id>
+   <id>http://localhost:4000/2020/01/16/segmenttree</id>
    <content type="html">&lt;p&gt;本文的目的，归纳整理segment tree这个数据结构的使用。参考codeforces的&lt;a href=&quot;https://codeforces.com/blog/entry/15729&quot;&gt;链接
 1&lt;/a&gt;和&lt;a href=&quot;https://codeforces.com/blog/entry/18051&quot;&gt;链接2&lt;/a&gt;以及&lt;a href=&quot;https://codeforces.com/blog/entry/15890&quot;&gt;链接3&lt;/a&gt;。&lt;/p&gt;
 
@@ -461,9 +638,9 @@ int sum(int x,int y, int id = 1, int l = 0,  int r = n)
  
  <entry>
    <title>Particle System rendered on Unity RT Image</title>
-   <link href="http://localhost:4001/2020/01/12/rtt-particle"/>
+   <link href="http://localhost:4000/2020/01/12/rtt-particle"/>
    <updated>2020-01-12T00:00:00+08:00</updated>
-   <id>http://localhost:4001/2020/01/12/RTT_Particle</id>
+   <id>http://localhost:4000/2020/01/12/RTT_Particle</id>
    <content type="html">&lt;p&gt;本文目的: 对于项目中遇到的的在RT上显示特效的问题进行总结。&lt;/p&gt;
 
 &lt;!--more--&gt;
@@ -673,9 +850,9 @@ Category {
  
  <entry>
    <title>interval trees</title>
-   <link href="http://localhost:4001/2020/01/05/intervaltree"/>
+   <link href="http://localhost:4000/2020/01/05/intervaltree"/>
    <updated>2020-01-05T00:00:00+08:00</updated>
-   <id>http://localhost:4001/2020/01/05/intervaltree</id>
+   <id>http://localhost:4000/2020/01/05/intervaltree</id>
    <content type="html">&lt;p&gt;本文目的： 研究interval trees来加深对红黑树的理解。&lt;/p&gt;
 
 &lt;!--more--&gt;
@@ -1409,12 +1586,11 @@ class IntervalTree:public BinTree&amp;lt;int,IntervalNode&amp;gt;
  
  <entry>
    <title>BM算法（字符串快速匹配算法）</title>
-   <link href="http://localhost:4001/2020/01/04/faststringsearch"/>
+   <link href="http://localhost:4000/2020/01/04/faststringsearch"/>
    <updated>2020-01-04T00:00:00+08:00</updated>
-   <id>http://localhost:4001/2020/01/04/faststringsearch</id>
-   <content type="html">&lt;p&gt;本文目的在于读论文&lt;a href=&quot;https://www.cs.utexas.edu/users/moore/publications/fstrpos.pdf&quot;&gt;“A Fast String Searching Algorithm”&lt;/a&gt;,一些读后感。&lt;/p&gt;
+   <id>http://localhost:4000/2020/01/04/faststringsearch</id>
+   <content type="html">&lt;p&gt;本文目的在于研究BM算法的大概思路。&lt;/p&gt;
 
-&lt;!--more--&gt;
 &lt;h3 id=&quot;bm算法&quot;&gt;BM算法&lt;/h3&gt;
 &lt;p&gt;字符串string
 匹配串P，长度patlen。
@@ -1673,15 +1849,16 @@ int match(const char* txt, int txtLen, const char* pat, int patlen)
 &lt;/code&gt;&lt;/pre&gt;
 &lt;h2 id=&quot;附&quot;&gt;附&lt;/h2&gt;
 &lt;p&gt;在 “Knuth D.E. Morris J.H., and Pratt, V.R. Fast pattern matching in strings”中Knuth提出了线性时间
-构造delta2的方法。&lt;/p&gt;
+构造delta2的方法。
+参考论文&lt;a href=&quot;https://www.cs.utexas.edu/users/moore/publications/fstrpos.pdf&quot;&gt;“A Fast String Searching Algorithm”&lt;/a&gt;&lt;/p&gt;
 </content>
  </entry>
  
  <entry>
    <title>红黑树</title>
-   <link href="http://localhost:4001/2020/01/03/redblacktre"/>
+   <link href="http://localhost:4000/2020/01/03/redblacktre"/>
    <updated>2020-01-03T00:00:00+08:00</updated>
-   <id>http://localhost:4001/2020/01/03/redblacktre</id>
+   <id>http://localhost:4000/2020/01/03/redblacktre</id>
    <content type="html">&lt;p&gt;本篇文章的目的，学习红黑树。使用教材，”Introduction to Algorithms 3rd”。&lt;/p&gt;
 
 &lt;!--more--&gt;
