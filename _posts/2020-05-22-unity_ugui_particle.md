@@ -6,7 +6,6 @@ excerpt_seperator: <!--more-->
 tags: [unity, ugui, particlesystem]
 ---
 最近在整理以前的代码，看到以前使用UGUI刷新ParticleSystem的一些代码，稍微整理下了。
-<!--more-->
 
 ## 背景
 
