@@ -2,11 +2,10 @@
 layout: post
 title : unity_ugui_particle
 categories: [ugui]
-exceprt_seperator: <!--more-->
+excerpt_seperator: <!--more-->
 tags: [unity, ugui, particlesystem]
 ---
 最近在整理以前的代码，看到以前使用UGUI刷新ParticleSystem的一些代码，稍微整理下了。
-
 <!--more-->
 
 ## 背景
@@ -175,5 +174,3 @@ class UIBillboardParticle : Graphic
 ## 猜想
 理论上这里知识构建一个简单的Mesh，然后去模拟粒子效果，当然，这里需要每一帧去创建Mesh，相比
 粒子原来的Mesh变换会慢一定，但问题定位目前县搁置吧，以后有机会看到源码再研究下。
-
-
