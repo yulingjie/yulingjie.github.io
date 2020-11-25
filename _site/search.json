@@ -2,6 +2,17 @@
   
     {
 
+      "title"    : "SDF 字体渲染初探",
+      "url"      : "/2020/11/15/improved-sdf-font-renderering",
+      "category" : "工程",
+      "tags"     : "TMP, SDF",
+      "date"     : "2020-11-15 00:00:00 +0800",
+      "discription" : ""
+
+    } ,
+  
+    {
+
       "title"    : "unity_ugui_particle",
       "url"      : "/2020/05/22/unity-ugui-particle",
       "category" : "ugui",
@@ -16,7 +27,7 @@
       "title"    : "C.Sereja and Brackets",
       "url"      : "/2020/01/19/sereja-and-brackets",
       "category" : "算法",
-      "tags"     : "",
+      "tags"     : "algorithm",
       "date"     : "2020-01-19 00:00:00 +0800",
       "discription" : ""
 

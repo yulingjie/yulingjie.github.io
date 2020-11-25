@@ -3,7 +3,7 @@ layout: post
 title: SDF 字体渲染初探
 categories: [工程]
 excerpt_seperator: <!--more-->
-tags [TMP, SDF]
+tags: [TMP, SDF]
 ---
 最近在看SDF字体渲染相关算法，从论文[Improved Alpha-Tested Magnification for Vector Textures and Special Effects](https://steamcdn-a.akamaihd.net/apps/valve/2007/SIGGRAPH2007_AlphaTestedMagnification.pdf "Improved Alpha-Tested Magnification")开始。
 

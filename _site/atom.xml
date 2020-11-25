@@ -4,7 +4,7 @@
  <title>只砖片瓦</title>
  <link href="http://localhost:4000/atom.xml" rel="self"/>
  <link href="http://localhost:4000/"/>
- <updated>2020-05-23T08:27:28+08:00</updated>
+ <updated>2020-11-24T11:15:15+08:00</updated>
  <id>http://localhost:4000</id>
  <author>
    <name></name>
@@ -13,13 +13,165 @@
 
  
  <entry>
+   <title>SDF 字体渲染初探</title>
+   <link href="http://localhost:4000/2020/11/15/improved-sdf-font-renderering"/>
+   <updated>2020-11-15T00:00:00+08:00</updated>
+   <id>http://localhost:4000/2020/11/15/Improved_SDF_Font_Renderering</id>
+   <content type="html">&lt;p&gt;最近在看SDF字体渲染相关算法，从论文&lt;a href=&quot;https://steamcdn-a.akamaihd.net/apps/valve/2007/SIGGRAPH2007_AlphaTestedMagnification.pdf&quot; title=&quot;Improved Alpha-Tested Magnification&quot;&gt;Improved Alpha-Tested Magnification for Vector Textures and Special Effects&lt;/a&gt;开始。&lt;/p&gt;
+
+&lt;h2 id=&quot;原理概述&quot;&gt;原理概述&lt;/h2&gt;
+&lt;p&gt;二维平面上字体由一个封闭的区域形成，通过记录这个区域上每个像素点到外部区域的距离，我们可以将这个几何体的几何信息记录下来。在使用时，通过已经记录的信息来进行渲染。&lt;/p&gt;
+
+&lt;h2 id=&quot;sdf生成&quot;&gt;SDF生成&lt;/h2&gt;
+&lt;p&gt;对目标图的每一个像素，计算源图上这个像素的distance值，直接遍历计算：&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt; void GenerateSDF64(Texture2D srcTexture, Texture2D dstTexture)
+    {
+        var colors = srcTexture.GetPixels();
+        byte[] dst = new byte[dstTexture.width * dstTexture.height];
+        int srcW = srcTexture.width;
+        int srcH = srcTexture.height;
+        int dstW = dstTexture.width;
+        int dstH = dstTexture.height;
+        int dx0 = 0;
+        int dx1 = dstW;
+        int dy0 = 0;
+        int dy1 = dstH;
+        int downScale = srcW / (dstW );
+        for(int dy = dy0; dy &amp;lt; dy1;++dy)
+        {
+            int sy0 = (dy ) * downScale ;
+            int sy1 = (dy + 1) * downScale ;
+            float cy = (dy  ) * downScale;
+            for(int dx = dx0; dx &amp;lt; dx1; ++dx)
+            {
+                int sx0 = (dx ) * downScale;
+                int sx1 = (dx + 1) * downScale ;
+                float cx = (dx ) * downScale;
+                float d0 = 1e22f;
+                float d1 = 1e22f;
+                //var cl = (colors[(int)(cx + cy * srcW)]) ;
+                //UnityEngine.Debug.LogFormat(&quot;r = {0} g = {1} b = {2} a = {3}&quot;,cl.r, cl.g, cl.b, cl.a);
+                //UnityEngine.Debug.LogFormat(&quot;dy = {0} dx = {1} sx0 = {2} sx1 = {3} sy0 = {4} sy1 ={5} cx = {6} cy = {7}&quot;, dy, dx,sx0, sx1,sy0,sy1,cx,cy);
+                for(int sy = sy0; sy &amp;lt;= sy1; ++sy)
+                {
+                    float yp = sy + 0.5f;
+                    for(int sx = sx0; sx &amp;lt;= sx1; ++sx)
+                    {
+                        float xp = sx + 0.5f;
+                        float d = (cx - xp) * (cx - xp) + (cy - yp) * (cy - yp);
+                        float p = 0;
+                        if(sx &amp;gt;= 0 &amp;amp;&amp;amp; sx &amp;lt; srcW &amp;amp;&amp;amp; sy &amp;gt;=0 &amp;amp;&amp;amp; sy &amp;lt; srcH)
+                        {
+                            int index = sx + sy * srcW;
+                            //UnityEngine.Debug.LogFormat(&quot;index = {0}, sx = {1} sy = {2}&quot;,index,sx, sy);
+                            var c = colors[sx + sy * srcW];
+                            if(c == Color.white)
+                            {
+                                p =1;
+                            }
+                            //if(p &amp;gt; 0f)
+                             //   UnityEngine.Debug.LogFormat(&quot;c.r = {0} + c.g = {1} + c.b = {2}&quot;,c.r, c.g, c.b);
+                        }
+                        if (p &amp;gt; 0f)
+                            d0 = Mathf.Min(d0, d);
+                        else
+                            d1 = Mathf.Min(d1, d);
+                        //                if(sx &amp;gt;=0 &amp;amp;&amp;amp; sx &amp;lt;
+                        //UnityEngine.Debug.LogFormat(&quot;sy = {0} sx = {1}&quot;, sy, sx);
+                    }
+                }
+                float dd = 0;
+                if(d1 &amp;lt; d0)
+                {
+                    // outside
+                    dd = Mathf.Max(0.0f, Mathf.Min(127.5f, Mathf.Sqrt(d0)));
+                    dst[dx + dy * dstW] = (byte)(127.5f - dd );
+
+                    //UnityEngine.Debug.LogFormat(&quot;compress {0} {1} to {2} outside&quot;,dx,dy,dd);
+                }
+                else
+                {
+                    // inside
+                    dd = Mathf.Max(0.0f, Mathf.Min(127.5f, Mathf.Sqrt(d1)));
+                    dst[dx + dy * dstW] = (byte)(127.5f + dd );
+
+                    //UnityEngine.Debug.LogFormat(&quot;compress {0} {1} to {2} inside&quot;,dx,dy,dd);
+                }
+           //     UnityEngine.Debug.LogFormat(&quot;dx ={0} dy = {1} d0 = {2} d1 = {3}&quot;,dx, dy, d0, d1);
+            }
+        }
+        for(int i = 0 ; i &amp;lt; dstW; ++i)
+        {
+            for(int j = 0; j &amp;lt; dstH; ++j)
+            {
+                var c = dst[ i + j *dstW];
+                dstTexture.SetPixel(i,j, new Color(0, 0,0,c/255.0f));
+            }
+        }
+    }
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;当前生成256x256大小的图片，64大小的效果变形严重。
+&lt;img src=&quot;assets/textmeshpro/256_dst.png&quot; alt=&quot;256_dst&quot; /&gt;
+一张Alpha8格式的图。每个像素点记录着这个点到外部区域的最短距离。&lt;/p&gt;
+&lt;h2 id=&quot;渲染&quot;&gt;渲染&lt;/h2&gt;
+&lt;p&gt;直接可以设置alpha &amp;gt; 0.5 来作为clip的边界。
+&lt;img src=&quot;assets/texmeshpro/alpha_clip_0.5.png&quot; alt=&quot;alpha_clip_0.5&quot; /&gt;
+可以看到，此时边界的锯齿还是比较明显的。
+对边界做平滑处理。&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;fixed distance = tex2D(_MainTex, i.texcoord0).a;
+
+fixed4 color = _FaceColor;
+float alpha = smoothstep(_DstMin, _DstMax,distance);
+color *= alpha;
+return color;
+
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;效果 &lt;img src=&quot;assets/textmeshpro/smoothstep.png&quot; alt=&quot;smooth_step&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;outline效果的实现。
+对于边界处0.5左右做一个黑色描边即可。&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;float outlineFactor = smoothstep(_DstMin, _DstMax, distance);
+fixed4 color = lerp(_OutlineColor, _FaceColor, outlineFactor);
+float alpha = smoothstep(_OutlineMin, _OutlineMax, distance);
+//float alpha = 1.0;
+return fixed4(color.rgb, color.a * alpha);
+
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;在&lt;code&gt;&amp;lt; _DstMin&lt;/code&gt;的像素点全部画OutLine Color，在&lt;code&gt;_DstMin ,_DstMax&lt;/code&gt;之间做渐变，在&lt;code&gt;&amp;gt;_DstMax&lt;/code&gt;处画FaceColor,
+限制alpha值即可：&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;assets/textmeshpro/outline.png&quot; alt=&quot;outline&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;shadow效果的实现。
+shadow 可以理解为在偏移处再画一遍就好了。
+&lt;img src=&quot;assets/textmeshpro/shadow_0.01.png&quot; alt=&quot;shadow_offset&quot; /&gt;&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;float alpha = smoothstep(_DstMin, _DstMax, distance);
+fixed4 text = fixed4(_FaceColor.rgb, _FaceColor.a * alpha);
+float shadowDistance = tex2D(_MainTex, i.texcoord0 - _ShadowOffset).a;
+float shadowAlpha = smoothstep(_ShadowMin, _ShadowMax, shadowDistance);
+fixed4 shadow = fixed4(_ShadowColor.rgb, _ShadowColor.a * shadowAlpha);
+return lerp
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;结果：
+&lt;img src=&quot;assets/textmeshpro/shadoww.png&quot; alt=&quot;shadow_result&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;glow效果的实现。
+论文中的glow效果比较简单，与shadow类似，在文字位置再画一次GlowColor,叠加在一起：
+效果：
+&lt;img src=&quot;assets/textmeshpro/glow.png&quot; alt=&quot;glow&quot; /&gt;&lt;/p&gt;
+
+&lt;h2 id=&quot;结语&quot;&gt;结语&lt;/h2&gt;
+&lt;p&gt;本文较为简单的实现了一遍论文内容，对SDF算法做了个初步的认知。目前的实现会有较大的信息丢失，更为精细的实现可以参考TextMeshPro实现。&lt;/p&gt;
+
+</content>
+ </entry>
+ 
+ <entry>
    <title>unity_ugui_particle</title>
    <link href="http://localhost:4000/2020/05/22/unity-ugui-particle"/>
    <updated>2020-05-22T00:00:00+08:00</updated>
    <id>http://localhost:4000/2020/05/22/unity_ugui_particle</id>
    <content type="html">&lt;p&gt;最近在整理以前的代码，看到以前使用UGUI刷新ParticleSystem的一些代码，稍微整理下了。&lt;/p&gt;
-
-&lt;!--more--&gt;
 
 &lt;h2 id=&quot;背景&quot;&gt;背景&lt;/h2&gt;
 
@@ -185,7 +337,6 @@ class UIBillboardParticle : Graphic
 &lt;h2 id=&quot;猜想&quot;&gt;猜想&lt;/h2&gt;
 &lt;p&gt;理论上这里知识构建一个简单的Mesh，然后去模拟粒子效果，当然，这里需要每一帧去创建Mesh，相比
 粒子原来的Mesh变换会慢一定，但问题定位目前县搁置吧，以后有机会看到源码再研究下。&lt;/p&gt;
-
 </content>
  </entry>
  
