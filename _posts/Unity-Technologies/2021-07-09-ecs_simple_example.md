@@ -1,6 +1,6 @@
 ---
 layout: post
-title: ECS初探-一个简单的例子
+title: ECS初探---一个简单的例子
 categories: [Unity-Technoligies]
 tags: [unity]
 excerpt_seperator: <!--more-->

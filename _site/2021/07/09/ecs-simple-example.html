@@ -1,0 +1,146 @@
+<!DOCTYPE html><html lang="en" ><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="Jekyll v4.1.1" /><meta property="og:title" content="ECS初探—一个简单的例子" /><meta property="og:locale" content="en_US" /><meta name="description" content="ECS初探" /><meta property="og:description" content="ECS初探" /><link rel="canonical" href="http://localhost:4000/2021/07/09/ecs-simple-example" /><meta property="og:url" content="http://localhost:4000/2021/07/09/ecs-simple-example" /><meta property="og:site_name" content="只砖片瓦" /><meta property="og:type" content="article" /><meta property="article:published_time" content="2021-07-09T00:00:00+08:00" /><meta name="twitter:card" content="summary" /><meta property="twitter:title" content="ECS初探—一个简单的例子" /><meta name="twitter:site" content="@" /> <script type="application/ld+json"> {"headline":"ECS初探—一个简单的例子","dateModified":"2021-07-09T00:00:00+08:00","datePublished":"2021-07-09T00:00:00+08:00","mainEntityOfPage":{"@type":"WebPage","@id":"http://localhost:4000/2021/07/09/ecs-simple-example"},"url":"http://localhost:4000/2021/07/09/ecs-simple-example","description":"ECS初探","@type":"BlogPosting","@context":"https://schema.org"}</script><title> ECS初探---一个简单的例子 - 只砖片瓦</title><link rel="shortcut icon" href="/favicon.png"><link rel="alternate" type="application/atom+xml" title="只砖片瓦" href="/atom.xml"><link rel="alternate" type="application/json" title="只砖片瓦" href="http://localhost:4000/feed.json" /><link rel="sitemap" type="application/xml" title="sitemap" href="/sitemap.xml" /><style> *,:after,:before{box-sizing:border-box;background-color:inherit;color:inherit;margin:0;padding:0}body{font-family:system-ui, sans-serif;-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;line-height:1.5;font-size:1rem;color:#16171a}nav ul{border-right:1px solid #edf2f7}a{color:#000;text-decoration-skip-ink:auto;text-decoration:underline}pre{margin:.5rem 0;padding:.5rem}.post p{margin:.5rem 0}.post h1,.post h2,.post h3,.post h4{margin:1rem 0}.post h2:first-child,.project h2:first-child,.photo h2:first-child{margin-top:0}.meta{margin:2rem 0}code,pre{background:#ecedee}code{padding:.1rem}pre code{border:none}pre{padding:1rem;overflow-x:auto}img{max-width:100%}hr{background:#000;height:1px;border:0}header{flex-basis:10rem;flex-grow:1;position:relative}header a{text-decoration:none}header li{margin-bottom:.2rem;text-align:right;margin-right:2rem}header a.active{font-weight:bold}header,section{padding:1rem}blockquote{font-style:italic;border-left:5px solid #ececec;padding-left:1rem}h1,h2,h3,h4,h5{line-height:1;margin:1rem 0;font-weight:600}section h1:first-child{margin-top:0}strong,b{font-weight:bold}.photos ul{list-style:none}.photos li{margin-bottom:1.5rem}.photo picture,.project picture{margin-bottom:0.5rem}.posts ul,header ul{list-style:none}.posts li{align-items:center;display:flex;justify-content:space-between;margin-bottom:.5rem}.posts li a,.posts li div,.projects li a{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-decoration:none}.posts li time,.projects li time{padding-left:1rem;white-space:nowrap;font-variant-numeric:tabular-nums}main{display:flex;flex-wrap:wrap;max-width:60rem;margin:2rem auto;padding:1rem}@media screen and (max-width: 45rem){header li{display:inline;margin-right:1rem}.logo{padding-bottom:1rem}header ul{border-bottom:1px solid #edf2f7;padding-bottom:2rem}nav ul{border-right:0px}.photos ul{margin-top:0.5rem}}section{flex-basis:0;flex-grow:999;min-width:70%;display:flex;flex-direction:column}.entry-content{margin:10px 0}figcaption{font-size:smaller}.entry-header{margin:1px 0 10px 0;border:0;color:#000000;font-family:Arial, sans-serif;font-size:medium;line-height:normal;text-align:left;font-weight:bold}</style></head><body><main role="main"><header role="banner"> <!--<h1 class="logo">只砖片瓦</h1>--><nav role="navigation"><ul><li><a href="/" >Writing</a></li><li><a href="/about" >About</a></li><li><a href="/search" >Search</a></li><li><a href="/categories" >Categories</a></li></ul></nav></header><section class="post"><h2>ECS初探---一个简单的例子</h2><h1 id="ecs初探">ECS初探</h1><h2 id="ecs是什么">ECS是什么</h2><pre><code>ECS是基于DOTS理念的一套Unity逻辑框架。这个框架目前还在开发当中，在逐渐把之前的依稀OOP理念转到ECS的开发理念中。
+DOTS，Data Oriented Tech. Stack,与之前OOP的理念不同，将数据放在一起储存，方法放在另外的地方，而不是将数据与方法放在一起。
+ECS在这里指的是一套框架用来实现DOTS的理念。
+Entity，Component，System， Entity是指实体，指数据的集合，在Unity中是指Component的集合; Component这里指的是单纯的数据了， 与Unity之前的Component概念并不一致；System这里是用来处理数据的方法。
+</code></pre><!--more--><h2 id="简单的例子">简单的例子</h2><pre><code>加载一个Cube，旋转它一定时间后，销毁这个Cube。
+按照OOP的理念，我们可以迅速的写出代码： ``` public class TestOOP : MonoBehaviour {
+public Transform prefab;
+public float duration;
+public float rotateSpeed;
+
+private GameObject m_rtGoCube;
+// Start is called before the first frame update
+void Start()
+{
+    m_rtGoCube = GameObject.Instantiate(prefab.gameObject,Vector3.zero, Quaternion.identity);
+}
+
+// Update is called once per frame
+void Update()
+{
+    if(m_rtGoCube != null)
+    {
+        m_rtGoCube.transform.Rotate(1, rotateSpeed * Time.deltaTime,0);
+    }
+   if(duration &gt;1.0f)
+   {
+       duration -= Time.deltaTime;
+       if(duration &lt;= 1.0f)
+       {
+           GameObject.Destroy(m_rtGoCube);
+       }
+   }
+} } ```
+现在我们可以理出数据，实例化一个prefab，然后旋转并销毁这个操作需要如下数据： ```
+// 创建
+public Transform prefab; // 需要实例化的prefab
+public Vector3 worldPosition; // 实例话的prefab需要放的位置
+public Quaternion rotation; // 初始旋转角度
+// 旋转
+public float rotationSpeed; //选择速度
+public float duration; //选择持续时间 ```
+ECS中，数据使用Component来表示。Component的集合称之为Entity。既然所有的数据都是Entity了，创建数据本身也需要是个Entity： ``` // 创建数据
+</code></pre><p>public struct Spawner_Cube: IComponentData { public Entity Prefab; public Vector3 startPosition; public Quaternion startRotation; public float rotationSpeed; public int duration; }</p><pre><code>    现在有了数据结构，需要解决：1 如何定义这两个数据；2 如何将这两个Component绑在一个Entity上； 3 如何获取数据然后使用。
+    1 定义数据：目前看到的方法仍然是定义一个MonoBehaviour脚本，在上修改参数：
+</code></pre><p>public class SpawnerAuthoring_Spawn: MonoBehaviour { public GameObject Prefab; public Vector3 startPosition; public Quaternion rotation; public int duration; public float rotationSpeed; }</p><pre><code>    2 如何绑定到Entity上，看了下需要挂ConvertToEntity脚本，实现接口` IDeclareReferencedPrefabs,IConvertGameObjectToEntity`:
+    ```
+public void DeclareReferencedPrefabs(List&lt;GameObject&gt; referencedPrefabs)
+{
+    referencedPrefabs.Add(Prefab);
+}
+public void Convert(Entity entity, EntityManager dstManager,
+        GameObjectConversionSystem  conversionSystem)
+{
+    var spawnerData = new Spawner_Cube
+    {
+        Prefab = conversionSystem.GetPrimaryEntity(Prefab),
+        startPosition = startPosition,
+        startRotation = rotation,
+        rotationSpeed = rotationSpeed,
+        duration = duration,
+    };
+   
+    dstManager.AddComponentData(entity, spawnerData);
+}
+</code></pre><pre><code>3 如何使用。ECS中使用是发生在System里，目前System继承自SystemBase。这里需要明确两个使用目的，一个是依据Entity数据创建这个Prefab，一个是旋转Cube一定时间然后摧毁它。 那么这里有两个System，Spawner与Rotator。
+依据Entity上的数据创建： ``` [UpdateInGroup(typeof(SimulationSystemGroup))] // 更新时序，这里意味着在SimulationSystemGroup这个Group里更新 public  class SpawnerSystem_Cube: SystemBase {
+BeginInitializationEntityCommandBufferSystem m_EntityCommandBufferSystem; // EntityCommmandBuffer 的使用, 在创建Entity的时候必须通过EntityCommandBuffer来操作
+
+protected override void OnCreate()
+{
+    m_EntityCommandBufferSystem = World.GetOrCreateSystem&lt;BeginInitializationEntityCommandBufferSystem&gt;(); // 初始化EntityCommandBuffer
+}
+
+protected override void OnUpdate()
+{
+    var commandBuffer = m_EntityCommandBufferSystem.CreateCommandBuffer().AsParallelWriter(); // 需要在ForEach中操作CommandBuffer，需要调用AsParallelWriter
+    // 遍历Entity找到具有Spawner_Cube数据与LocalToWorld数据的Entity
+    Entities.ForEach((Entity entity, 
+            int entityInQueryIndex, 
+            in Spawner_Cube spawnerCube,
+            in LocalToWorld localtion) =&gt; 
+    {
+        var instance = commandBuffer.Instantiate(entityInQueryIndex, spawnerCube.Prefab); // 创建一个Prefab Entity
+        var position = math.transform(localtion.Value,
+                spawnerCube.startPosition);
+        var rotation = math.rotate(localtion.Value, spawnerCube.startRotation.eulerAngles);
+        commandBuffer.SetComponent(entityInQueryIndex, instance,
+                new Unity.Transforms.Translation{Value = position}); // 设置这个prefab entity的position属性
+        
+        commandBuffer.SetComponent(entityInQueryIndex, instance,
+                new Unity.Transforms.Rotation{ Value = Quaternion.Euler(rotation)}); // 设置这个prefab entity ritation 属性
+        
+        commandBuffer.DestroyEntity(entityInQueryIndex, entity); // 摧毁创建Entity, 保证这个Entity只创建一次
+    }).ScheduleParallel();
+   // 让BeginInitializationEntityCommandBufferSystem 感知当前System 
+   m_EntityCommandBufferSystem.AddJobHandleForProducer(this.Dependency); 
+} } ```
+`EntityCommandBufferSystem`是ECS框架内置的一套操作Entity的机制； &gt; The default World initialization provides three system groups, for initialization, simulation, and presentation, that are updated in order each frame. Within a group, there is an entity command buffer system that runs before any other system in the group and another that runs after all other systems in the group. Preferably, you should use one of the existing command buffer systems rather than creating your own in order to minimize synchronization points. See Default System Groups for a list of the default groups and command buffer systems
+这样，我们就可以将Prefab创建出来了。
+现在，需要实现旋转，需要做如下两件事：1 这个Prefab Entity 我们是没有添加Rotation Component的；2  需要创建一个System来便利这个Entity并旋转；
+为这个Entity添加Rotation Component： ``` // 新建立一个Rotation_Cube  Component public struct Rotation_Cube: IComponentData {
+public float rotationSpeed; } ``` ``` // 在Spawner System中修改Entity 的Component结构，添加Rotation_Cube Component commandBuffer.AddComponent(entityInQueryIndex, instance,  
+                new Rotation_Cube{rotationSpeed = spawnerCube.rotationSpeed, duration = spawnerCube.duration}); ```
+旋转这个Entity: ``` // 同样，创建一个RotationSpeedSystem， 遍历所有有Rotation 与 Rotation_Cube的 Entity进行旋转 public  class RotationSpeedSystem: SystemBase {
+protected override void OnUpdate()
+{
+    var deltaTime = Time.DeltaTime;
+
+    Entities.WithName("RotationSpeedSystem")
+        .ForEach((ref Rotation rotation, in Rotation_Cube rotationCube) =&gt;
+                {
+                    rotation.Value = math.mul(math.normalize(rotation.Value),
+                            Quaternion.AngleAxis(
+                                rotationCube.rotationSpeed * deltaTime,
+                                math.up()));
+                }).ScheduleParallel();
+} } ```
+最后，需要在旋转一段时间后销毁这个Prefab Entity，同样，需要一个Component来记录duration参数，并且需要一个System来使用duration并销毁;
+创建一个Component： ``` public struct Duration_Cube: IComponentData {
+public float remainTime; } ```
+并且在添加System 专门用来处理倒计时： ``` public class LifeTimeSystem: SystemBase {
+Unity.Entities.EndSimulationEntityCommandBufferSystem m_Barrier;
+
+protected override void OnCreate()
+{
+    m_Barrier = World.GetOrCreateSystem&lt;EndSimulationEntityCommandBufferSystem&gt;();
+}
+protected override void OnUpdate()
+{
+    var commandBuffer = m_Barrier.CreateCommandBuffer().AsParallelWriter();
+    var deltaTime = Time.DeltaTime;
+
+    Entities.ForEach((Entity entity, int nativeThreadIndex, ref Duration_Cube lifetime)=&gt;
+            {
+                lifetime.remainTime -= deltaTime;
+                if(lifetime.remainTime &lt; 0.0f)
+                {
+                    commandBuffer.DestroyEntity(nativeThreadIndex, entity);
+                }
+            }).ScheduleParallel();
+} }
+
+    m_Barrier.AddJobHandleForProducer(Dependency); ```
+
+至此，一个简单的ECS任务就完成了。
+</code></pre><span class="meta"><time datetime="2021-07-09T00:00:00+08:00">July 9, 2021</time> &middot; <a href="/tag/unity">unity</a></span> <!--<span class="meta"><time datetime="2021-07-09T00:00:00+08:00">July 9, 2021</time> &middot; <a class="post" href="/tag/unity">unity</a></span> --></section></main></body></html>
