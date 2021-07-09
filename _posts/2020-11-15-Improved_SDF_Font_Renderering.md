@@ -100,11 +100,11 @@ tags: [TMP, SDF]
     }
 ```
 当前生成256x256大小的图片，64大小的效果变形严重。
-![256_dst](assets/textmeshpro/256_dst.png)
+![256_dst](/assets/textmeshpro/256_dst.png)
 一张Alpha8格式的图。每个像素点记录着这个点到外部区域的最短距离。
 ## 渲染
 直接可以设置alpha > 0.5 来作为clip的边界。
-![alpha_clip_0.5](assets/texmeshpro/alpha_clip_0.5.png)
+![alpha_clip_0.5](/assets/texmeshpro/alpha_clip_0.5.png)
 可以看到，此时边界的锯齿还是比较明显的。
 对边界做平滑处理。
 ```
@@ -116,7 +116,7 @@ color *= alpha;
 return color;
 
 ```
-效果 ![smooth_step](assets/textmeshpro/smoothstep.png)
+效果 ![smooth_step](/assets/textmeshpro/smoothstep.png)
 
 outline效果的实现。
 对于边界处0.5左右做一个黑色描边即可。
@@ -131,12 +131,12 @@ return fixed4(color.rgb, color.a * alpha);
 在`< _DstMin`的像素点全部画OutLine Color，在`_DstMin ,_DstMax`之间做渐变，在`>_DstMax`处画FaceColor,
 限制alpha值即可：
 
-![outline](assets/textmeshpro/outline.png)
+![outline](/assets/textmeshpro/outline.png)
 
 
 shadow效果的实现。
 shadow 可以理解为在偏移处再画一遍就好了。
-![shadow_offset](assets/textmeshpro/shadow_0.01.png)
+![shadow_offset](/assets/textmeshpro/shadow_0.01.png)
 ```
 float alpha = smoothstep(_DstMin, _DstMax, distance);
 fixed4 text = fixed4(_FaceColor.rgb, _FaceColor.a * alpha);
@@ -146,13 +146,13 @@ fixed4 shadow = fixed4(_ShadowColor.rgb, _ShadowColor.a * shadowAlpha);
 return lerp
 ```
 结果：
-![shadow_result](assets/textmeshpro/shadoww.png)
+![shadow_result](/assets/textmeshpro/shadoww.png)
 
 
 glow效果的实现。
 论文中的glow效果比较简单，与shadow类似，在文字位置再画一次GlowColor,叠加在一起：
 效果：
-![glow](assets/textmeshpro/glow.png)
+![glow](/assets/textmeshpro/glow.png)
 
 
 ## 结语
