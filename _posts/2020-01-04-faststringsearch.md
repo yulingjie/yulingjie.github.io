@@ -2,12 +2,12 @@
 layout: post
 title : BM算法（字符串快速匹配算法）
 categories: [算法]
-excerpt_seperator: <!--more-->
+excerpt_separator: <!--more-->
 ---
 
 
 本文目的在于研究BM算法的大概思路。
-
+<!--more-->
 
 ### BM算法
 字符串string

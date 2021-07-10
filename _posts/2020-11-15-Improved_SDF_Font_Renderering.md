@@ -1,14 +1,15 @@
 ---
 layout: post
 title: SDF 字体渲染初探
-categories: [工程]
-excerpt_seperator: <!--more-->
+categories: [Unity-Technologies]
+excerpt_separator: <!--more-->
 tags: [TMP, SDF]
 ---
 最近在看SDF字体渲染相关算法，从论文[Improved Alpha-Tested Magnification for Vector Textures and Special Effects](https://steamcdn-a.akamaihd.net/apps/valve/2007/SIGGRAPH2007_AlphaTestedMagnification.pdf "Improved Alpha-Tested Magnification")开始。
 
 ## 原理概述
 二维平面上字体由一个封闭的区域形成，通过记录这个区域上每个像素点到外部区域的距离，我们可以将这个几何体的几何信息记录下来。在使用时，通过已经记录的信息来进行渲染。
+<!--more-->
 
 ## SDF生成
 对目标图的每一个像素，计算源图上这个像素的distance值，直接遍历计算：

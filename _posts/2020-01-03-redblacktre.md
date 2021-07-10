@@ -3,7 +3,7 @@ layout: post
 title : 红黑树
 categories: [算法]
 tags: [algorithm]
-excerpt_seperator: <!--more-->
+excerpt_separator: <!--more-->
 
 ---
 

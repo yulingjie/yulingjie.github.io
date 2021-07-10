@@ -1,9 +1,9 @@
 ---
 layout: post
 title: ECS初探---一个简单的例子
-categories: [Unity-Technoligies]
+categories: [Unity-Technologies]
 tags: [unity]
-excerpt_seperator: <!--more-->
+excerpt_separator: <!--more-->
 
 ---
 # ECS初探

@@ -2,7 +2,7 @@
 layout: post
 title : segment tree
 categories: [算法]
-exceprt_seperator: <!--more-->
+exceprt_separator: <!--more-->
 
 ---
 

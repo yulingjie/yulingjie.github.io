@@ -2,7 +2,7 @@
 layout: post
 title : C.Sereja and Brackets
 categories: [算法]
-exceprt_seperator: <!--more-->
+exceprt_separator: <!--more-->
 tags: [algorithm]
 ---
 
