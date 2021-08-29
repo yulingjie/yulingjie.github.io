@@ -4,13 +4,260 @@
  <title>只砖片瓦</title>
  <link href="http://localhost:4000/atom.xml" rel="self"/>
  <link href="http://localhost:4000/"/>
- <updated>2021-07-10T23:19:57+08:00</updated>
+ <updated>2021-08-29T20:45:54+08:00</updated>
  <id>http://localhost:4000</id>
  <author>
    <name></name>
    <email>lingjiey@gmail.com</email>
  </author>
 
+ 
+ <entry>
+   <title>Unity Rendering Engine ARchitecture Part I</title>
+   <link href="http://localhost:4000/2021/08/29/unity-rendering-engine-architecture-part1"/>
+   <updated>2021-08-29T00:00:00+08:00</updated>
+   <id>http://localhost:4000/2021/08/29/unity_rendering_engine_architecture_part1</id>
+   <content type="html">&lt;h2 id=&quot;principles&quot;&gt;Principles&lt;/h2&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;Performance reach: Scaling of high-end to low end
+    &lt;ul&gt;
+      &lt;li&gt;intelligently
+        &lt;ul&gt;
+          &lt;li&gt;Without sacrificing performance whenever possible&lt;/li&gt;
+          &lt;li&gt;Make “whenever possible” be as non-conservative as possible&lt;/li&gt;
+          &lt;li&gt;Make smart performant choices without pushing constraints on crators&lt;/li&gt;
+        &lt;/ul&gt;
+      &lt;/li&gt;
+    &lt;/ul&gt;
+  &lt;/li&gt;
+  &lt;li&gt;Enable the creator
+      - Provide deep ability to customize but with solid table-stakes architecture ( don’t ask to reinvent the wheel)&lt;/li&gt;
+  &lt;li&gt;Enable quick iteration&lt;/li&gt;
+  &lt;li&gt;Be Reliable
+      - Whenever possible, keep content always working through the architecture evolution&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;!--more--&gt;
+&lt;h2 id=&quot;architecture&quot;&gt;Architecture&lt;/h2&gt;
+
+&lt;h3 id=&quot;evolution&quot;&gt;Evolution&lt;/h3&gt;
+
+&lt;pre&gt;&lt;code&gt;Build-in Render Pipeline (BiRP) -&amp;gt; Scriptable Render Pipeline (SRP) -&amp;gt; Hybrid DOTS SRP
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;h3 id=&quot;build-in-render-pipeline-birp&quot;&gt;Build-In Render Pipeline (BiRP)&lt;/h3&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;Unity’s single rendering pipeline prior to SRP&lt;/li&gt;
+  &lt;li&gt;
+    &lt;table&gt;
+      &lt;tbody&gt;
+        &lt;tr&gt;
+          &lt;td&gt;Targets mobile to console&lt;/td&gt;
+          &lt;td&gt;PC&lt;/td&gt;
+          &lt;td&gt;AR&lt;/td&gt;
+          &lt;td&gt;VR&lt;/td&gt;
+        &lt;/tr&gt;
+      &lt;/tbody&gt;
+    &lt;/table&gt;
+  &lt;/li&gt;
+  &lt;li&gt;
+    &lt;table&gt;
+      &lt;tbody&gt;
+        &lt;tr&gt;
+          &lt;td&gt;Supports forward&lt;/td&gt;
+          &lt;td&gt;deferred rendering and decent variety of features&lt;/td&gt;
+        &lt;/tr&gt;
+      &lt;/tbody&gt;
+    &lt;/table&gt;
+  &lt;/li&gt;
+  &lt;li&gt;Convenience: One-stop shop for rendering&lt;/li&gt;
+  &lt;li&gt;Turnkey solution for all platforms&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;h3 id=&quot;bibp-challenges&quot;&gt;BiBP Challenges&lt;/h3&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;Blackbox System&lt;/li&gt;
+  &lt;li&gt;Locked down configuration&lt;/li&gt;
+  &lt;li&gt;Bulk of code in c++ (not user-modifiable)&lt;/li&gt;
+  &lt;li&gt;Prestructed render flow and render passes&lt;/li&gt;
+  &lt;li&gt;Hardcoded rendering algorithm&lt;/li&gt;
+  &lt;li&gt;Unconstrained customization makes achieving performance hard&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;h3 id=&quot;srp-architecture-goals&quot;&gt;SRP Architecture Goals&lt;/h3&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;Componentize the steps of rendering&lt;/li&gt;
+  &lt;li&gt;Provide a rich set of building blocks and a way to composite or extend them&lt;/li&gt;
+  &lt;li&gt;Separation of control of execution&lt;/li&gt;
+  &lt;li&gt;Fast native inner loops for low-level rendering&lt;/li&gt;
+  &lt;li&gt;Fast developer iteration&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;h3 id=&quot;srp-high-level-concept&quot;&gt;SRP High-Level Concept&lt;/h3&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;Invoke filtered drawcalls from script&lt;/li&gt;
+  &lt;li&gt;Shaders can be designed for specific render pipelines&lt;/li&gt;
+  &lt;li&gt;
+    &lt;table&gt;
+      &lt;tbody&gt;
+        &lt;tr&gt;
+          &lt;td&gt;Combine with a list of visible objects&lt;/td&gt;
+          &lt;td&gt;lights, etc.&lt;/td&gt;
+        &lt;/tr&gt;
+      &lt;/tbody&gt;
+    &lt;/table&gt;
+  &lt;/li&gt;
+  &lt;li&gt;Significantly simplifies high level code for render pipeline&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;h3 id=&quot;scriptable-render-pipeline&quot;&gt;Scriptable Render Pipeline&lt;/h3&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;Unity by default provides two concrete pipelines by default
+    &lt;ul&gt;
+      &lt;li&gt;Universal Render Pipeline (URP)&lt;/li&gt;
+      &lt;li&gt;High Definition Render Pipeline (HDRP)&lt;/li&gt;
+    &lt;/ul&gt;
+  &lt;/li&gt;
+  &lt;li&gt;Users can build their own pipeline
+    &lt;ul&gt;
+      &lt;li&gt;Either by modifying existing URP and HDRP pipelines as the base&lt;/li&gt;
+      &lt;li&gt;Or completely make your own&lt;/li&gt;
+    &lt;/ul&gt;
+  &lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;h2 id=&quot;scriptable-render-pipeline-architecture&quot;&gt;Scriptable Render Pipeline Architecture&lt;/h2&gt;
+
+&lt;p&gt;&lt;img src=&quot;/assets/srp/srp_architecture.png&quot; alt=&quot;srp architecture&quot; /&gt;&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;SRP fronted: scripting layer lives in userland where you can customize your rendering&lt;/li&gt;
+  &lt;li&gt;grahpiics backed: core rendering lives - batching, graphics device interaction , etc&lt;/li&gt;
+  &lt;li&gt;In Unity a shader is essentially an interface, and a material is a specific override of that interface with concrete properties&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;h3 id=&quot;srp-batch-processing-api&quot;&gt;SRP Batch Processing API&lt;/h3&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;Submitting Individual draws from C# - SLOW&lt;/li&gt;
+  &lt;li&gt;Controlling higher level rendering flow - Not so slow!&lt;/li&gt;
+  &lt;li&gt;RenderContext - A proxy object that lives within our c++ layer but has a binding layer into c#&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;h2 id=&quot;how-does-unity-render-a-frame&quot;&gt;How does Unity render a Frame&lt;/h2&gt;
+&lt;p&gt;&lt;img src=&quot;/assets/srp/srp_unity_frame.png&quot; alt=&quot;srp unity frame&quot; /&gt;&lt;/p&gt;
+&lt;ul&gt;
+  &lt;li&gt;Unity is a heavily main thread focused engine due to it’s extensive c# callback based playerloop
+    &lt;ul&gt;
+      &lt;li&gt;very fast and easy to prototype with&lt;/li&gt;
+      &lt;li&gt;needs extra attention when you are looking to scale up a project&lt;/li&gt;
+    &lt;/ul&gt;
+  &lt;/li&gt;
+  &lt;li&gt;A frame in Unity is build in a number of stages
+    &lt;ul&gt;
+      &lt;li&gt;Game Logic Section: non rendering systems and user script code is executed&lt;/li&gt;
+      &lt;li&gt;Rendering
+        &lt;ol&gt;
+          &lt;li&gt;Culling - Includes callbacks to userland code for visibility&lt;/li&gt;
+          &lt;li&gt;Performing the rendering algorithm (on the main thread in userland script code)&lt;/li&gt;
+          &lt;li&gt;Submitting the operations which includes figure out draw state, sorting, and calculating per object draw data (c++)&lt;/li&gt;
+          &lt;li&gt;Offloading the rendering command buffer to the render thread
+&lt;img src=&quot;/assets/srp/srp_render_call.png&quot; alt=&quot;srp render call&quot; /&gt;&lt;/li&gt;
+        &lt;/ol&gt;
+      &lt;/li&gt;
+    &lt;/ul&gt;
+  &lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;h3 id=&quot;culling&quot;&gt;Culling&lt;/h3&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;perform a lot of mathematical heavy operations to get a renderable set of nodes&lt;/li&gt;
+  &lt;li&gt;performant and paralyzable&lt;/li&gt;
+  &lt;li&gt;call context.Cull&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;&lt;img src=&quot;/assets/srp/srp_culling.png&quot; alt=&quot;srp culling&quot; /&gt;&lt;/p&gt;
+
+&lt;h3 id=&quot;srp-toolbox&quot;&gt;SRP Toolbox&lt;/h3&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;Render Graph&lt;/li&gt;
+  &lt;li&gt;Render Pass API&lt;/li&gt;
+  &lt;li&gt;Improved Batch operations&lt;/li&gt;
+  &lt;li&gt;Improved Batching&lt;/li&gt;
+  &lt;li&gt;Material overrides&lt;/li&gt;
+  &lt;li&gt;Volume System&lt;/li&gt;
+  &lt;li&gt;Texture Atlas System&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;h3 id=&quot;submit-call&quot;&gt;Submit Call&lt;/h3&gt;
+&lt;pre&gt;&lt;code&gt;Commands are passed to the render thread in a producer / consumer model where the graphics device backend can consume the commands in a platform specific way.
+Some backends directly submit the commands. Others use native graphics jobs to process the command stream.
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;h2 id=&quot;hybrid-dots-srp-architecture&quot;&gt;Hybrid DOTS SRP Architecture&lt;/h2&gt;
+&lt;pre&gt;&lt;code&gt;This new technology no longer supports the old build-in rendering pipeline(BiRP) ### DOTS Data-Oriented Tech Stack
++ Classic Object oriented data model -- runtime performance is lacking
++ DOTS ECS separates components to chunks of linear data
++ DOTS Jobs System provides fine grained task parallelism
++ Burst Compiler is a new C# auto-vectorizing compiler convering a C99 subset of the C# languge
++ iterative conversion from GameObjects to DOTS ECS ### SRP Batcher &amp;amp; DOTS Hybrid Renderer
++ building batches of compatible renderers to aoid the costly shader changes
++ SRP Batcher is fully separating the material storage an dupload from the high frequency draw loop. The material data is now persistent in the GPU memory and uploaded only when changed
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;h3 id=&quot;hybrid-renderer&quot;&gt;Hybrid Renderer&lt;/h3&gt;
+&lt;p&gt;&lt;img src=&quot;/assets/srp/srp_hybrid_renderer.png&quot; alt=&quot;srp hybrid renderer&quot; /&gt;&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;GameObject convert to DOTS data. convert existing authoring GameObject data to efficient runtime data layout&lt;/li&gt;
+  &lt;li&gt;DOTS ECS: Chunks and Arhcetypes. Entities are split to archetypes based on their component set.&lt;/li&gt;
+  &lt;li&gt;DOTS ECS: Queries. The query processes through the selected component arrasy of each chunk. Only the components in the query are touched. Other unrelated data is not touched.&lt;/li&gt;
+  &lt;li&gt;DOTS ECS: Version Tracking. maintain a version number to each component array in each chunk.&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;h4 id=&quot;hybrid-renderer-data-model-backend&quot;&gt;Hybrid Renderer Data Model: Backend&lt;/h4&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;allocate persistent GPU memory for each GPU visible ECS component&lt;/li&gt;
+  &lt;li&gt;use a large ByteAddressBuffers to store the ECS data in GPU side&lt;/li&gt;
+  &lt;li&gt;“Graphics Archetype”: a subset of the DOTS archetype, the same grahpics archetype has the same GPU data layout&lt;/li&gt;
+  &lt;li&gt;query each chunk for modified data. run a job with access to mapped GPU upload heap pointer. copy actual data arrays from the modified chunkts to the GPU visible memory.&lt;/li&gt;
+  &lt;li&gt;use a compute shader to go through the linear upload heap data array and scatter the modifications.&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;h4 id=&quot;data-access&quot;&gt;Data access&lt;/h4&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;Traditional GPU instancing:
+    &lt;ul&gt;
+      &lt;li&gt;needs to define a hardcoded set of properties that can be overriden per instance — too larger set or too small set&lt;/li&gt;
+      &lt;li&gt;compiling multiple shader variants for different data layouts — combinaatorial explosion&lt;/li&gt;
+      &lt;li&gt;create a metadata constant buffer for each (graphics archetype, material) combination.&lt;/li&gt;
+      &lt;li&gt;this buffer contains the start offsets of each shader property data stream.&lt;/li&gt;
+      &lt;li&gt;steal the high bit of the offset for a stride mask. force all instances to read from the same shared memory location, instead of reading from contiguous memory addresses&lt;/li&gt;
+      &lt;li&gt;use arithmetic shift to replicate the mask bit and bnary AND to mask the instance id.&lt;/li&gt;
+    &lt;/ul&gt;
+  &lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;h2 id=&quot;conclusion-principles&quot;&gt;Conclusion: Principles&lt;/h2&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;Customizability&lt;/li&gt;
+  &lt;li&gt;Scalability &amp;amp; Platform Reach&lt;/li&gt;
+  &lt;li&gt;Performance&lt;/li&gt;
+  &lt;li&gt;Fast Iteration&lt;/li&gt;
+&lt;/ul&gt;
+</content>
+ </entry>
  
  <entry>
    <title>ECS初探---一个简单的例子</title>
