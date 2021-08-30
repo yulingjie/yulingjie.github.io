@@ -1,12 +1,9 @@
 ---
 layout: post
-title : Unity Rendering Engine ARchitecture Part I
+title : Unity Rendering Engine Architecture Part I
 categories: [unity]
 excerpt_separator: <!--more-->
 ---
-
-
-
 
 ## Principles
 
