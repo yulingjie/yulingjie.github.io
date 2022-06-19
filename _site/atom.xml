@@ -1,10 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <feed xmlns="http://www.w3.org/2005/Atom">
 
- <title>只砖片瓦</title>
+ <title>小黑板</title>
  <link href="http://localhost:4000/atom.xml" rel="self"/>
  <link href="http://localhost:4000/"/>
- <updated>2021-08-29T20:45:54+08:00</updated>
+ <updated>2022-06-19T21:22:40+08:00</updated>
  <id>http://localhost:4000</id>
  <author>
    <name></name>
@@ -13,7 +13,534 @@
 
  
  <entry>
-   <title>Unity Rendering Engine ARchitecture Part I</title>
+   <title>Hard Shadow</title>
+   <link href="http://localhost:4000/2022/06/19/hard-shadow"/>
+   <updated>2022-06-19T00:00:00+08:00</updated>
+   <id>http://localhost:4000/2022/06/19/hard-shadow</id>
+   <content type="html">&lt;h1 id=&quot;一个简单的shadowmap&quot;&gt;一个简单的ShadowMap&lt;/h1&gt;
+
+&lt;h2 id=&quot;简述&quot;&gt;简述&lt;/h2&gt;
+&lt;p&gt;使用Metal实现一个简单的shadowmap。&lt;/p&gt;
+&lt;ol&gt;
+  &lt;li&gt;使用Metal实现Blin-Phong模型；&lt;/li&gt;
+  &lt;li&gt;生成点光源的ShadowMap并实现阴影；&lt;/li&gt;
+&lt;/ol&gt;
+
+&lt;h2 id=&quot;使用metal实现blin-phong模型&quot;&gt;使用Metal实现Blin-Phong模型&lt;/h2&gt;
+&lt;p&gt;细节网上比较多; 
+&lt;img src=&quot;/assets/blinn_phong/D255A71F-BC82-4D18-80A2-76C7B6946AED.png&quot; alt=&quot;blinn_phong&quot; /&gt;&lt;/p&gt;
+
+\[L_o(\theta_o,\phi_o)=\int_{\phi_i=0}^{2\pi}\int_{\theta_i=0}^{\pi/2}f(\theta_i,\phi_i,\theta_o,\phi_o)L(\theta_i,\phi_i)cos\theta_isin\theta_id\theta_id\phi_i\]
+
+&lt;p&gt;对物体的着色分为：环境光+漫反射+高光。&lt;/p&gt;
+
+&lt;p&gt;Metal模型的加载从官网的Demo上复制下&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;+ (nonnull id&amp;lt;MTLTexture&amp;gt;) createMetalTextureFromMaterial: (nonnull MDLMaterial*) material
+                                  modelIOMaterialSemantic: (MDLMaterialSemantic) materialSemantic
+                                    metalKitTextureLoader: (nonnull MTKTextureLoader*) textureLoader
+{
+    id&amp;lt;MTLTexture&amp;gt; texture;
+    NSArray&amp;lt;MDLMaterialProperty*&amp;gt; *propertiesWithSemantic = [material propertiesWithSemantic:materialSemantic];
+    
+    for(MDLMaterialProperty * property in propertiesWithSemantic)
+    {
+        if(property.type == MDLMaterialPropertyTypeString || property.type == MDLMaterialPropertyTypeURL)
+        {
+            NSDictionary * textureLoaderOptions = @{
+                MTKTextureLoaderOptionTextureUsage : @(MTLTextureUsageShaderRead),
+                MTKTextureLoaderOptionTextureStorageMode : @(MTLStorageModePrivate),
+                MTKTextureLoaderOptionSRGB : @(NO)
+            };
+            NSURL * url = property.URLValue;
+            NSMutableString * URLString = nil;
+            if(property.type == MDLMaterialPropertyTypeURL){
+                URLString = [[NSMutableString alloc] initWithString:[url absoluteString]];
+            }
+            else{
+                URLString = [[NSMutableString alloc] initWithString:@&quot;file://&quot;];
+                [URLString appendString:property.stringValue];
+            }
+            
+            NSURL* textureURL = [NSURL URLWithString:URLString];
+            texture = [textureLoader newTextureWithContentsOfURL:textureURL options:textureLoaderOptions error:nil];
+            
+            if(texture){
+                return texture;
+            }
+            
+            NSString * lastComponent = [[URLString componentsSeparatedByString:@&quot;/&quot;] lastObject];
+            texture = [textureLoader newTextureWithName:lastComponent scaleFactor:0 bundle:nil options:textureLoaderOptions error:nil];
+            if(texture){
+                return texture;
+            }
+            
+            [NSException raise:@&quot;Texture data for material property not found&quot;
+                        format:@&quot;Requested material property semantic: %lu string:%@&quot;,
+             materialSemantic, property.stringValue];
+        }
+    }
+    [NSException raise:@&quot;No appropriate material property from which to create texture&quot;
+                format:@&quot;Requested material property semantic: %lu&quot;, materialSemantic];
+    return nil;
+}
+
+- (nonnull instancetype) initWithModelIOSubmesh: (nonnull MDLSubmesh*) modelIOSubmesh
+                                metalKitSubmesh:(nonnull MTKSubmesh*) metalKitSubmesh
+                          metalKitTextureLoader:(nonnull MTKTextureLoader *)textureLoader
+{
+    self = [super init];
+    if(self)
+    {
+        _metalKitSubmesh = metalKitSubmesh;
+        _textures = [[NSMutableArray alloc] initWithCapacity:AAPLNumTextureIndices];
+        for(NSUInteger shaderIndex = 0; shaderIndex &amp;lt; AAPLNumTextureIndices; shaderIndex ++)
+        {
+            [_textures addObject:(id&amp;lt;MTLTexture&amp;gt;)[NSNull null]];
+        }
+        @try {
+            _textures[AAPLTextureIndexBaseColor] = [AAPLSubmesh createMetalTextureFromMaterial:modelIOSubmesh.material modelIOMaterialSemantic:MDLMaterialSemanticBaseColor metalKitTextureLoader:textureLoader];
+        } @catch (NSException *exception) {
+            NSLog(@&quot;Failed to Load AAPLTextureIndexBaseColor, error %@&quot;, [exception description]);
+        } @finally {
+            
+        }
+        @try{
+            _textures[AAPLTextureIndexSpecular] = [AAPLSubmesh createMetalTextureFromMaterial:modelIOSubmesh.material modelIOMaterialSemantic:MDLMaterialSemanticSpecular metalKitTextureLoader:textureLoader];
+        } @catch (NSException * exception){
+            NSLog(@&quot;Failed to Load AAPLTextureIndexSpecular, error %@&quot;, [exception description]);
+        } @finally{
+            
+        }
+        @try{
+            _textures[AAPLTextureIndexNormal] = [AAPLSubmesh createMetalTextureFromMaterial:modelIOSubmesh.material modelIOMaterialSemantic:MDLMaterialSemanticTangentSpaceNormal metalKitTextureLoader:textureLoader];
+        } @catch (NSException * exception){
+            NSLog(@&quot;Failed to Load AAPLTextureIndexNormal, error %@&quot;, [exception description]);
+        } @finally{
+            
+        }
+      
+        
+    }
+    return self;
+}
+
+@end
+
+@implementation  AAPLMesh{
+    NSMutableArray&amp;lt;AAPLSubmesh *&amp;gt; *_submeshes;
+}
+@synthesize  submeshes = _submeshes;
+
+- (nonnull instancetype) initWithModelIOMesh: (nonnull MDLMesh*) modelIOMesh
+                     modelIOVertexDescriptor: (nonnull MDLVertexDescriptor*) vertexDescriptor
+                       metalKitTextureLoader: (nonnull MTKTextureLoader *) textureLoader
+                                 metalDevice: (nonnull id&amp;lt;MTLDevice&amp;gt;) device
+                                       error: (NSError *__nullable * __nullable)error
+{
+    self = [super init];
+    if(!self){
+        return nil;
+    }
+    // Have ModelIO create the tangents from mesh texture coordinates and normals
+    [modelIOMesh addTangentBasisForTextureCoordinateAttributeNamed: MDLVertexAttributeTextureCoordinate
+                                              normalAttributeNamed:MDLVertexAttributeNormal
+                                             tangentAttributeNamed:MDLVertexAttributeTangent];
+    // Have ModelIO create bitangents from mesh texture coordinates and the newly created tangents
+    [modelIOMesh addTangentBasisForTextureCoordinateAttributeNamed: MDLVertexAttributeTextureCoordinate
+                                             tangentAttributeNamed:MDLVertexAttributeTangent
+                                           bitangentAttributeNamed:MDLVertexAttributeBitangent];
+    
+    modelIOMesh.vertexDescriptor = vertexDescriptor;
+    
+    MTKMesh* metalKitMesh = [[MTKMesh alloc] initWithMesh: modelIOMesh
+                                                   device:device
+                                                    error:error];
+    _metalKitMesh = metalKitMesh;
+    
+    assert(metalKitMesh.submeshes.count == modelIOMesh.submeshes.count);
+    
+    _submeshes = [[NSMutableArray alloc] initWithCapacity:metalKitMesh.submeshes.count];
+    
+    for(NSUInteger index = 0; index &amp;lt; metalKitMesh.submeshes.count; ++index)
+    {
+        AAPLSubmesh * submesh = [[AAPLSubmesh alloc] initWithModelIOSubmesh:modelIOMesh.submeshes[index] metalKitSubmesh:metalKitMesh.submeshes[index] metalKitTextureLoader:textureLoader];
+        
+        [_submeshes addObject:submesh];
+    }
+    return self;
+    
+}
+
++ (NSArray&amp;lt;AAPLMesh*&amp;gt; *) newMeshesFromObject:(nonnull MDLObject*) object
+                     modelIOVertexDescriptor:(nonnull MDLVertexDescriptor*) vertexDescriptor
+                       metalKitTextureLoader:(nonnull MTKTextureLoader *) textureLoader
+                                 metalDevice:(nonnull id&amp;lt;MTLDevice&amp;gt;) device
+                                       error:(NSError * __nullable * __nullable) error
+{
+    NSMutableArray&amp;lt;AAPLMesh *&amp;gt; *newMeshes = [[NSMutableArray alloc] init];
+    
+    if([object isKindOfClass:[MDLMesh class]])
+    {
+        MDLMesh * mesh = (MDLMesh*) object;
+        AAPLMesh *newMesh = [[AAPLMesh alloc] initWithModelIOMesh:mesh modelIOVertexDescriptor:vertexDescriptor metalKitTextureLoader:textureLoader metalDevice:device error:error];
+        
+        [newMeshes addObject:newMesh];
+    }
+    for(MDLObject* child in object.children)
+    {
+        NSArray&amp;lt;AAPLMesh*&amp;gt; *childMeshes;
+        childMeshes = [AAPLMesh newMeshesFromObject:child
+                            modelIOVertexDescriptor:vertexDescriptor
+                              metalKitTextureLoader:textureLoader
+                                        metalDevice:device
+                                              error:error];
+        [newMeshes addObjectsFromArray:childMeshes];
+    }
+    return newMeshes;
+}
+
++ (nullable NSArray&amp;lt;AAPLMesh *&amp;gt; *) newMeshesFromURL:(NSURL *)url
+                        modelIOVertexDesriptor:(MDLVertexDescriptor *)vertexDescriptor
+                                         metalDeice:(id&amp;lt;MTLDevice&amp;gt;)device
+                                              error:(NSError * _Nullable __autoreleasing *)error
+{
+    MTKMeshBufferAllocator * bufferAllocator = [[MTKMeshBufferAllocator alloc] initWithDevice:device];
+    
+    MDLAsset * asset = [[MDLAsset alloc] initWithURL:url
+                                    vertexDescriptor:nil
+                                     bufferAllocator:bufferAllocator];
+    NSAssert(asset, @&quot;Failed to open model file with given URL: %@&quot;, url.absoluteString);
+    
+    MTKTextureLoader * textureLoader = [[MTKTextureLoader alloc] initWithDevice:device];
+    
+    NSMutableArray&amp;lt;AAPLMesh*&amp;gt; *newMeshes = [[NSMutableArray alloc] init];
+    
+    for(MDLObject* object in asset)
+    {
+        NSArray&amp;lt;AAPLMesh*&amp;gt; *assetMeshes;
+        
+        assetMeshes = [AAPLMesh newMeshesFromObject:object
+                             modelIOVertexDescriptor:vertexDescriptor
+                               metalKitTextureLoader:textureLoader
+                                         metalDevice:device
+                                               error:error];
+        [newMeshes addObjectsFromArray:assetMeshes];
+    }
+    return newMeshes;
+}
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;设置PipelineState&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt; _mtlVertexDescriptor = [[MTLVertexDescriptor alloc] init];
+
+    _mtlVertexDescriptor.attributes[VertexAttributePosition].format = MTLVertexFormatFloat3;
+    _mtlVertexDescriptor.attributes[VertexAttributePosition].offset = 0;
+    _mtlVertexDescriptor.attributes[VertexAttributePosition].bufferIndex = BufferIndexMeshPositions;
+
+    _mtlVertexDescriptor.attributes[VertexAttributeTexcoord].format = MTLVertexFormatFloat2;
+    _mtlVertexDescriptor.attributes[VertexAttributeTexcoord].offset = 0;
+    _mtlVertexDescriptor.attributes[VertexAttributeTexcoord].bufferIndex = BufferIndexMeshGenerics;
+    
+    _mtlVertexDescriptor.attributes[VertexAttributeNormal].format = MTLVertexFormatHalf4;
+    _mtlVertexDescriptor.attributes[VertexAttributeNormal].offset = 8;
+    _mtlVertexDescriptor.attributes[VertexAttributeNormal].bufferIndex = BufferIndexMeshGenerics;
+
+    _mtlVertexDescriptor.layouts[BufferIndexMeshPositions].stride = 12;
+    _mtlVertexDescriptor.layouts[BufferIndexMeshPositions].stepRate = 1;
+    _mtlVertexDescriptor.layouts[BufferIndexMeshPositions].stepFunction = MTLVertexStepFunctionPerVertex;
+
+    _mtlVertexDescriptor.layouts[BufferIndexMeshGenerics].stride = 16;
+    _mtlVertexDescriptor.layouts[BufferIndexMeshGenerics].stepRate = 1;
+    _mtlVertexDescriptor.layouts[BufferIndexMeshGenerics].stepFunction = MTLVertexStepFunctionPerVertex;
+
+    
+    id&amp;lt;MTLLibrary&amp;gt; defaultLibrary = [_device newDefaultLibrary];
+
+    
+    {
+        id &amp;lt;MTLFunction&amp;gt; vertexFunction = [defaultLibrary newFunctionWithName:@&quot;vertexShader&quot;];
+
+        id &amp;lt;MTLFunction&amp;gt; fragmentFunction = [defaultLibrary newFunctionWithName:@&quot;fragmentShader&quot;];
+        MTLRenderPipelineDescriptor *pipelineStateDescriptor = [[MTLRenderPipelineDescriptor alloc] init];
+        pipelineStateDescriptor.label = @&quot;MyPipeline&quot;;
+        pipelineStateDescriptor.sampleCount = view.sampleCount;
+        pipelineStateDescriptor.vertexFunction = vertexFunction;
+        pipelineStateDescriptor.fragmentFunction = fragmentFunction;
+        pipelineStateDescriptor.vertexDescriptor = _mtlVertexDescriptor;
+        pipelineStateDescriptor.colorAttachments[0].pixelFormat = view.colorPixelFormat;
+        pipelineStateDescriptor.depthAttachmentPixelFormat = view.depthStencilPixelFormat;
+        pipelineStateDescriptor.stencilAttachmentPixelFormat = view.depthStencilPixelFormat;
+
+        NSError *error = NULL;
+        _pipelineState = [_device newRenderPipelineStateWithDescriptor:pipelineStateDescriptor error:&amp;amp;error];
+        if (!_pipelineState)
+        {
+            NSLog(@&quot;Failed to create pipeline state, error %@&quot;, error);
+        }
+    
+
+    MTLDepthStencilDescriptor *depthStateDesc = [[MTLDepthStencilDescriptor alloc] init];
+    depthStateDesc.depthCompareFunction = MTLCompareFunctionLess;
+    depthStateDesc.depthWriteEnabled = YES;
+    _depthState = [_device newDepthStencilStateWithDescriptor:depthStateDesc];
+    }
+   
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;绘制&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt; for(__unsafe_unretained AAPLMesh * mesh in _meshes)
+    {
+        __unsafe_unretained MTKMesh *metalKitMesh = mesh.metalKitMesh;
+        
+        for(NSUInteger bufferIndex = 0; bufferIndex &amp;lt; metalKitMesh.vertexBuffers.count; bufferIndex++)
+        {
+            __unsafe_unretained MTKMeshBuffer * vertexBuffer = metalKitMesh.vertexBuffers[bufferIndex];
+            if((NSNull*) vertexBuffer != [NSNull null])
+            {
+                [renderEncoder setVertexBuffer:vertexBuffer.buffer
+                                        offset: vertexBuffer.offset
+                                       atIndex:bufferIndex];
+                
+            }
+        }
+        for(AAPLSubmesh * submesh in mesh.submeshes)
+        {
+            MTKSubmesh *metalKitSubmesh = submesh.metalKitSubmesh;
+            id&amp;lt;MTLTexture&amp;gt; texture = submesh.textures[AAPLTextureIndexBaseColor];
+            
+            
+            [renderEncoder setFragmentTexture:submesh.textures[AAPLTextureIndexBaseColor] atIndex:AAPLTextureIndexBaseColor];
+            
+            
+            [renderEncoder drawIndexedPrimitives:metalKitSubmesh.primitiveType
+                                      indexCount:metalKitSubmesh.indexCount
+                                       indexType:metalKitSubmesh.indexType
+                                     indexBuffer:metalKitSubmesh.indexBuffer.buffer
+                               indexBufferOffset:metalKitSubmesh.indexBuffer.offset];
+        }
+    }
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;shader&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;
+vertex ColorInOut vertexShader(Vertex in [[stage_in]],
+                               constant Uniforms &amp;amp; uniforms [[ buffer(BufferIndexUniforms) ]])
+{
+    ColorInOut out;
+
+    float4 position = float4(in.position, 1.0);
+    out.position = uniforms.projectionMatrix * uniforms.modelViewMatrix * position;
+    out.texCoord = in.texCoord;
+    out.normal = in.normal;
+    out.worldPosition = uniforms.modelViewMatrix * position;
+    float4 shadow_coord = (uniforms.shadowOrthographicMatrix * uniforms.shadowModelViewMatrix * position);
+    out.shadow_uv = shadow_coord.xy;
+    out.shadow_depth = half(shadow_coord.z);
+    return out;
+}
+fragment float4 fragmentShader(ColorInOut in[[stage_in]],
+                               constant Uniforms &amp;amp; uniforms [[buffer(BufferIndexUniforms)]],
+                               texture2d&amp;lt;half&amp;gt; colorMap [[texture(AAPLTextureIndexBaseColor)]],
+                               device AAPLPointLight * light_data [[buffer(BufferIndexLightsData)]])
+{
+    constexpr sampler colorSampler(mip_filter::linear, mag_filter::linear, min_filter::linear);
+   
+    half4 colorSample = colorMap.sample(colorSampler, in.texCoord.xy);
+    
+  
+    return float4(colorSample);
+}
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;显示模型的话用Games202的mari:
+&lt;img src=&quot;/assets/blinn_phong/20220619-161816.png&quot; alt=&quot;normal&quot; /&gt;
+换成Blinn-Phong&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;fragment float4 fragmentShader(ColorInOut in [[stage_in]],
+                               constant Uniforms &amp;amp; uniforms [[ buffer(BufferIndexUniforms) ]],
+                               texture2d&amp;lt;half&amp;gt; colorMap     [[ texture(AAPLTextureIndexBaseColor) ]],
+                               device AAPLPointLight *light_data [[buffer(BufferIndexLightsData)]]
+                               )
+{
+    constexpr sampler colorSampler(mip_filter::linear,
+                                   mag_filter::linear,
+                                   min_filter::linear);
+  
+    half4 colorSample   = colorMap.sample(colorSampler, in.texCoord.xy);
+   
+    float3 color = float3(colorSample.xyz);
+    
+    float3 ambient = 0.05 * color;
+    
+    device AAPLPointLight &amp;amp;light = light_data[0];
+    float3 fragPos = float3(in.worldPosition.xyz);
+    float3 lightPos = float3(light.lightPosition.xyz);
+    
+    float3 lightDir = normalize(lightPos - fragPos);
+    
+    float3 normal = normalize(in.normal);
+    
+    float diff = max(dot(lightDir, normal), 0.0);
+   
+    float len = length(lightPos - fragPos);
+    float light_atten_coff = light.lightIntensity / len;
+    
+   // float3 diffuse = diff * light_atten_coff * color;
+    float3 diffuse = diff * light_atten_coff * color;
+   
+    float3 viewDir = normalize(uniforms.uCameraPos - fragPos);
+    
+    float spec = 0.0f;
+    float3 reflectDir = reflect(-lightDir, normal);
+    spec = pow(max(dot(viewDir, reflectDir),0.0), 35.0);
+    
+    float3 specular = uniforms.uKs * light_atten_coff * spec;
+
+    return float4(pow((ambient + diffuse  + specular ), float3(1.0/2.2)),1.0);
+    
+}
+
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;&lt;img src=&quot;/assets/blinn_phong/20220619-163610.png&quot; alt=&quot;blinn_phong_mari&quot; /&gt;
+Ambient
+&lt;img src=&quot;/assets/blinn_phong/20220619-164836.png&quot; alt=&quot;ambient_mari&quot; /&gt;
+Diffuse
+&lt;img src=&quot;/assets/blinn_phong/20220619-164951.png&quot; alt=&quot;diffuse_mari&quot; /&gt;
+Specular
+&lt;img src=&quot;/assets/blinn_phong/20220619-165040.png&quot; alt=&quot;specular_mari&quot; /&gt;&lt;/p&gt;
+
+&lt;h2 id=&quot;使用metal生成shadowmap&quot;&gt;使用Metal生成ShadowMap&lt;/h2&gt;
+&lt;p&gt;原理不多赘述，从光源看物体生成ZBuffer信息。&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt; // Setup shadow pass
+    {
+        // render pass pipeline
+        MTLPixelFormat shadowMapPixelFormat = MTLPixelFormatDepth32Float;
+        
+        id&amp;lt;MTLFunction&amp;gt; shadowVertexFunction = [defaultLibrary newFunctionWithName:@&quot;shadow_vertex&quot;];
+        MTLRenderPipelineDescriptor * renderPipelineDescriptor = [MTLRenderPipelineDescriptor new];
+        renderPipelineDescriptor.label = @&quot;Shadow Gen&quot;;
+        renderPipelineDescriptor.vertexFunction = shadowVertexFunction;
+        renderPipelineDescriptor.fragmentFunction = nil;
+        renderPipelineDescriptor.depthAttachmentPixelFormat = shadowMapPixelFormat;
+        renderPipelineDescriptor.vertexDescriptor = _mtlVertexDescriptor;
+        
+        NSError *error = NULL;
+        _shadowGenPipelineState = [_device newRenderPipelineStateWithDescriptor:renderPipelineDescriptor error:&amp;amp;error];
+        if (!_shadowGenPipelineState)
+        {
+            NSLog(@&quot;Failed to create ShowdowMap Gen pipeline state, error %@&quot;, error);
+        }
+        // depth state
+        MTLDepthStencilDescriptor* depthStencilDesc = [MTLDepthStencilDescriptor new];
+        depthStencilDesc.label = @&quot;Shadow Gen&quot;;
+        depthStencilDesc.depthCompareFunction = MTLCompareFunctionLessEqual;
+        depthStencilDesc.depthWriteEnabled = YES;
+        _shadowDepthStencilState = [_device newDepthStencilStateWithDescriptor:depthStencilDesc];
+        
+        // shadow map
+        MTLTextureDescriptor * shadowTextureDesc = [MTLTextureDescriptor texture2DDescriptorWithPixelFormat:shadowMapPixelFormat width:2048 height:2048 mipmapped:NO];
+        shadowTextureDesc.resourceOptions = MTLResourceStorageModePrivate;
+        shadowTextureDesc.usage = MTLTextureUsageRenderTarget | MTLTextureUsageShaderRead;
+        _shadowMap = [_device newTextureWithDescriptor:shadowTextureDesc];
+        _shadowMap.label = @&quot;Shadow Map&quot;;
+        
+        // render pass descriptor
+        _shadowRenderPassDescriptor = [MTLRenderPassDescriptor new];
+        _shadowRenderPassDescriptor.depthAttachment.texture = _shadowMap;
+        _shadowRenderPassDescriptor.depthAttachment.loadAction = MTLLoadActionClear;
+        _shadowRenderPassDescriptor.depthAttachment.storeAction = MTLStoreActionStore;
+        _shadowRenderPassDescriptor.depthAttachment.clearDepth = 1.0;
+        
+    }
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;渲染阴影&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt; id&amp;lt;MTLRenderCommandEncoder&amp;gt; renderEncoder = [commandBuffer renderCommandEncoderWithDescriptor:_shadowRenderPassDescriptor];
+    renderEncoder.label = @&quot;Shadow Map Pass&quot;;
+    [renderEncoder setRenderPipelineState:_shadowGenPipelineState];
+    [renderEncoder setDepthStencilState:_shadowDepthStencilState];
+    [renderEncoder setCullMode:MTLCullModeBack];
+    [renderEncoder setVertexBuffer:_dynamicUniformBuffer offset:_uniformBufferOffset atIndex:BufferIndexUniforms];
+    
+    [self drawMeshes:renderEncoder];
+    [renderEncoder endEncoding];
+&lt;/code&gt;&lt;/pre&gt;
+&lt;pre&gt;&lt;code&gt;vertex ColorInOut shadow_vertex(Vertex in[[stage_in]],
+                                constant Uniforms &amp;amp; uniforms[[buffer(BufferIndexUniforms)]])
+{
+    ColorInOut out;
+    
+    float4 position = float4(in.position, 1.0);
+    out.position = uniforms.shadowOrthographicMatrix * uniforms.shadowModelViewMatrix * position;
+    out.texCoord = in.texCoord;
+    out.normal = in.normal;
+    
+    return out;
+}
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;&lt;img src=&quot;/assets/blinn_phong/20220619-181739.png&quot; alt=&quot;shadow_map&quot; /&gt;
+这里需要注意的是，阴影使用正交投影，矩阵的选择影响了阴影区域的大小和最终精度。&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;
+fragment float4 fragmentShader_Shadow(ColorInOut in [[stage_in]],
+                               constant Uniforms &amp;amp; uniforms [[ buffer(BufferIndexUniforms) ]],
+                               texture2d&amp;lt;half&amp;gt; colorMap     [[ texture(AAPLTextureIndexBaseColor) ]],
+                               device AAPLPointLight *light_data [[buffer(BufferIndexLightsData)]],
+                               texture2d&amp;lt;half&amp;gt; shadowMap [[texture(AAPLTextureIndexShadowMap)]])
+{
+    constexpr sampler colorSampler(mip_filter::linear,
+                                   mag_filter::linear,
+                                   min_filter::linear);
+  
+    half4 colorSample   = colorMap.sample(colorSampler, in.texCoord.xy);
+    constexpr sampler shadowSampler(coord::normalized,
+                                    filter::linear,
+                                    mip_filter::none,
+                                    address::clamp_to_edge);
+    float visibility = 1.0;
+    half4 shadowSample = shadowMap.sample(shadowSampler, (-in.shadow_uv + float2(1.0,1.0)) /2.0 );
+    
+    //return float4(shadowSample);
+    if(shadowSample.z &amp;lt; in.shadow_depth - 0.005)
+    {
+        visibility = 0.0;
+    }
+    float3 color = float3(colorSample.xyz);
+    
+    float3 ambient = 0.05 * color;
+    
+    device AAPLPointLight &amp;amp;light = light_data[0];
+    float3 fragPos = float3(in.worldPosition.xyz);
+    float3 lightPos = float3(light.lightPosition.xyz);
+    
+    float3 lightDir = normalize(lightPos - fragPos);
+    
+    float3 normal = normalize(in.normal);
+    
+    float diff = max(dot(lightDir, normal), 0.0);
+   
+    float len = length(lightPos - fragPos);
+    float light_atten_coff = light.lightIntensity / len;
+    
+   // float3 diffuse = diff * light_atten_coff * color;
+    float3 diffuse = diff * light_atten_coff * color;
+   
+    float3 viewDir = normalize(uniforms.uCameraPos - fragPos);
+    
+    float spec = 0.0f;
+    float3 reflectDir = reflect(-lightDir, normal);
+    spec = pow(max(dot(viewDir, reflectDir),0.0), 35.0);
+    
+    float3 specular = uniforms.uKs * light_atten_coff * spec;
+    
+    //return float4(visibility,visibility,visibility,1.0);
+    //return float4(ambient + diffuse + specular, 1.0);
+    return float4(pow((ambient + diffuse * visibility + specular * visibility), float3(1.0/2.2)),1.0);
+    
+}
+
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;&lt;img src=&quot;/assets/blinn_phong/20220619-182137.png&quot; alt=&quot;hard_shadow&quot; /&gt;
+这样，我们的硬阴影就有了。&lt;/p&gt;
+</content>
+ </entry>
+ 
+ <entry>
+   <title>Unity Rendering Engine Architecture Part I</title>
    <link href="http://localhost:4000/2021/08/29/unity-rendering-engine-architecture-part1"/>
    <updated>2021-08-29T00:00:00+08:00</updated>
    <id>http://localhost:4000/2021/08/29/unity_rendering_engine_architecture_part1</id>

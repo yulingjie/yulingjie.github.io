@@ -1,7 +1,7 @@
 site: Sidey
 url: #yoururl
-title: 只砖片瓦
-description: 一些归纳和总结
+title: 小黑板
+description: 偶尔写点什么。。。
 twitter:
   username: #yourusername
   card: summary
@@ -13,6 +13,7 @@ author:
   email: lingjiey@gmail.com
   url: #yoururl
 permalink: pretty
+markdown: kramdown
 
 baseurl: ""
 
